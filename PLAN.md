@@ -49,7 +49,12 @@ forwarding rules, Artifact Registry, secrets, KMS, DNS, log buckets, GCS,
 firewall rules, subnets, uptime checks and VPCs — none of which is on the
 recommender list above.
 
-## Architecture (proposed, nothing built)
+## Architecture
+
+Built and running (2026-11-15): Scheduler (06:00 UTC daily), Workflows, the
+Cloud Run job, AlloyDB. Not built yet: the agent, the report page.
+Deploy: `deploy/deploy.sh`; sweep now: `deploy/deploy.sh run`. Evidence:
+`evidence/first-cloud-run-2026-11-15.txt`.
 
 ```
 Cloud Scheduler (daily)

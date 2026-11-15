@@ -1,0 +1,36 @@
+First cloud sweep, 2026-11-15: Cloud Scheduler -> Workflows -> Cloud Run job (us-west1) -> AlloyDB Express.
+Workflow execution 69c25de0-b7c3-46cd-a192-49ac30dc6d3b, SUCCEEDED,
+start 20:24:01.71Z end 20:24:55.50Z (workflow timestamps). runs row: started 20:24:17.55Z, finished 20:24:51.31Z.
+
+Job output lines (Cloud Logging, jsonPayload):
+  zombiescan:  {"findings": 35, "monthly_cost": 245.65, "errors": 0, "seconds": 7.5}
+  recommender: {"findings": 13, "monthly_cost": 91.41, "errors": 0, "api_calls": 694, "seconds": 15.6}
+  finish:      {"recommender": {"findings": 13, "monthly_cost": 91.41}, "zombiescan": {"findings": 35, "monthly_cost": 245.65}}
+
+Overlap (view findings_compared):
+  recommender only 11 67.7972 | both 2 23.6081
+  zombiescan  only 33 177.1480 | both 2 68.5000
+Same counts and sums as the local run (first-run-2026-11-15.txt).
+
+Identity: service account zombie-sweep-job, holding only
+  projects/comglitn/roles/zombiescanScanner (zombiescan-gcp policy/zombiescan-scanner-role.yaml @ 9c74922),
+  roles/recommender.viewer, roles/alloydb.client, roles/alloydb.databaseUser,
+  roles/serviceusage.serviceUsageConsumer, roles/logging.logWriter.
+  All 20 checks ran with 0 errors under that role: the first scan constrained by it
+  (zombiescan-gcp policy/README.md listed this as not yet verified).
+Database login: IAM auth as zombie-sweep-job@comglitn.iam, no password.
+
+Found on the way (each is in deploy/deploy.sh now):
+  - AlloyDB Express ships with no database flags; IAM logins fail
+    ("AlloyDB IAM user authentication failed", SQLSTATE 28000) until
+    alloydb.iam_authentication=on. The flag update took 2 min 49 s
+    (operation createTime 20:19:44Z, endTime 20:22:33Z).
+  - gcloud has no `alloydb users describe`; check existence with `users list`.
+  - Workflows deploy fails "Workflows service agent does not exist" until
+    `gcloud beta services identity create --service=workflows.googleapis.com`.
+  - A new service account is not bindable for some seconds after creation.
+  - Cloud Run jobs log a JSON stdout line as jsonPayload, not textPayload.
+
+Scheduler path, forced with `gcloud scheduler jobs run zombie-sweep-daily`:
+  execution f936f41a-f2d8-4834-b1bf-2f7336fe72cc SUCCEEDED, 20:25:56.90Z -> 20:27:50.33Z.
+  zombiescan 35 / 245.65, 0 errors, 8.2 s; recommender 13 / 91.41, 0 errors, 694 calls, 16.5 s.

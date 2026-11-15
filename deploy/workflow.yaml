@@ -1,5 +1,7 @@
 # Daily sweep: both sources in parallel against one project, then close the run.
 # RUN_ID is this execution's id, so every row of one sweep shares it.
+# A failed job fails its branch and the execution; totals are in SQL and in the
+# finish job's log line.
 main:
   params: [args]
   steps:
@@ -10,10 +12,8 @@ main:
           - job: zombie-sweep
           - target: ${default(map.get(args, "project"), "comglitn")}
           - run_id: ${sys.get_env("GOOGLE_CLOUD_WORKFLOW_EXECUTION_ID")}
-          - results: {}
     - sources:
         parallel:
-          shared: [results]
           for:
             value: mode
             in: ["zombiescan", "recommender"]
@@ -29,10 +29,6 @@ main:
                               - {name: MODE, value: "${mode}"}
                               - {name: RUN_ID, value: "${run_id}"}
                               - {name: PROJECT_TO_SCAN, value: "${target}"}
-                  result: execution
-              - keep:
-                  assign:
-                    - results[mode]: ${execution.status.succeededCount}
     - finish:
         call: googleapis.run.v2.projects.locations.jobs.run
         args:
@@ -45,4 +41,4 @@ main:
                     - {name: RUN_ID, value: "${run_id}"}
                     - {name: PROJECT_TO_SCAN, value: "${target}"}
     - done:
-        return: {run_id: "${run_id}", succeeded: "${results}"}
+        return: {run_id: "${run_id}"}

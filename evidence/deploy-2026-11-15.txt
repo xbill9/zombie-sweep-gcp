@@ -1,0 +1,109 @@
+bound projects/comglitn/roles/zombiescanScanner -> zombie-sweep-job@comglitn.iam.gserviceaccount.com
+bound roles/recommender.viewer -> zombie-sweep-job@comglitn.iam.gserviceaccount.com
+bound roles/alloydb.client -> zombie-sweep-job@comglitn.iam.gserviceaccount.com
+bound roles/alloydb.databaseUser -> zombie-sweep-job@comglitn.iam.gserviceaccount.com
+bound roles/serviceusage.serviceUsageConsumer -> zombie-sweep-job@comglitn.iam.gserviceaccount.com
+bound roles/logging.logWriter -> zombie-sweep-job@comglitn.iam.gserviceaccount.com
+bound roles/run.jobsExecutorWithOverrides -> zombie-sweep-workflow@comglitn.iam.gserviceaccount.com
+bound roles/run.viewer -> zombie-sweep-workflow@comglitn.iam.gserviceaccount.com
+bound roles/workflows.invoker -> zombie-sweep-workflow@comglitn.iam.gserviceaccount.com
+bound roles/logging.logWriter -> zombie-sweep-workflow@comglitn.iam.gserviceaccount.com
+This command is equivalent to running `gcloud builds submit --tag [IMAGE] /home/xbill/gcp-pipeline/sweep` and `gcloud run jobs deploy zombie-sweep --image [IMAGE]`
+
+Building using Dockerfile and deploying container to Cloud Run job [[1mzombie-sweep[m] in project [[1mcomglitn[m] region [[1mus-west1[m]
+Building and updating job...
+Uploading sources..........done
+Building Container............................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................done
+Done.
+Job [[1mzombie-sweep[m] has successfully been deployed.
+
+To execute this job, use:
+gcloud run jobs execute zombie-sweep
+Service identity created: service-1056842563084@gcp-sa-workflows.iam.gserviceaccount.com
+Waiting for operation [operation-1794773865347-660565ab23800-5526803b-1506d210] to complete...
+......done.
+createTime: '2026-11-15T20:17:46.151253427Z'
+name: projects/comglitn/locations/us-west1/workflows/zombie-sweep
+revisionCreateTime: '2026-11-15T20:17:46.179903167Z'
+revisionId: 000001-663
+serviceAccount: projects/comglitn/serviceAccounts/zombie-sweep-workflow@comglitn.iam.gserviceaccount.com
+sourceContents: |
+  # Daily sweep: both sources in parallel against one project, then close the run.
+  # RUN_ID is this execution's id, so every row of one sweep shares it.
+  main:
+    params: [args]
+    steps:
+      - init:
+          assign:
+            - project: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
+            - region: us-west1
+            - job: zombie-sweep
+            - target: ${default(map.get(args, "project"), "comglitn")}
+            - run_id: ${sys.get_env("GOOGLE_CLOUD_WORKFLOW_EXECUTION_ID")}
+            - results: {}
+      - sources:
+          parallel:
+            shared: [results]
+            for:
+              value: mode
+              in: ["zombiescan", "recommender"]
+              steps:
+                - run_source:
+                    call: googleapis.run.v2.projects.locations.jobs.run
+                    args:
+                      name: ${"projects/" + project + "/locations/" + region + "/jobs/" + job}
+                      body:
+                        overrides:
+                          containerOverrides:
+                            - env:
+                                - {name: MODE, value: "${mode}"}
+                                - {name: RUN_ID, value: "${run_id}"}
+                                - {name: PROJECT_TO_SCAN, value: "${target}"}
+                    result: execution
+                - keep:
+                    assign:
+                      - results[mode]: ${execution.status.succeededCount}
+      - finish:
+          call: googleapis.run.v2.projects.locations.jobs.run
+          args:
+            name: ${"projects/" + project + "/locations/" + region + "/jobs/" + job}
+            body:
+              overrides:
+                containerOverrides:
+                  - env:
+                      - {name: MODE, value: finish}
+                      - {name: RUN_ID, value: "${run_id}"}
+                      - {name: PROJECT_TO_SCAN, value: "${target}"}
+      - done:
+          return: {run_id: "${run_id}", succeeded: "${results}"}
+state: ACTIVE
+updateTime: '2026-11-15T20:17:46.669587922Z'
+attemptDeadline: 180s
+httpTarget:
+  body: eyJhcmd1bWVudCI6ICJ7fSJ9
+  headers:
+    Content-Type: application/octet-stream
+    User-Agent: Google-Cloud-Scheduler
+  httpMethod: POST
+  oauthToken:
+    scope: https://www.googleapis.com/auth/cloud-platform
+    serviceAccountEmail: zombie-sweep-workflow@comglitn.iam.gserviceaccount.com
+  uri: https://workflowexecutions.googleapis.com/v1/projects/comglitn/locations/us-west1/workflows/zombie-sweep/executions
+name: projects/comglitn/locations/us-west1/jobs/zombie-sweep-daily
+retryConfig:
+  maxBackoffDuration: 3600s
+  maxDoublings: 5
+  maxRetryDuration: 0s
+  minBackoffDuration: 5s
+schedule: 0 6 * * *
+scheduleTime: '2026-11-16T06:00:00Z'
+state: ENABLED
+status:
+  code: -1
+timeZone: UTC
+userUpdateTime: '2026-11-15T20:17:57.601782Z'
+deployed
+
+real	2m12.442s
+user	0m19.637s
+sys	0m1.884s
