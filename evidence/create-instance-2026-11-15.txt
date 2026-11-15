@@ -1,0 +1,7 @@
+Operation ID: operation-1794771535584-66055cfd4dbb4-72e63bd1-1d9b95ea
+Creating instance...
+.......done.
+
+real	0m3.147s
+user	0m0.725s
+sys	0m0.078s

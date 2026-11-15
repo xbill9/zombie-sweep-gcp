@@ -1,0 +1,30 @@
+First local run, 2026-11-15, run_id local-20261115T194146Z, project comglitn.
+Jobs run from a workstation with gcloud's user token (quota project comglitn).
+
+zombiescan:  {"findings": 35, "monthly_cost": 245.65, "errors": 0, "seconds": 21.3}
+recommender: {"findings": 13, "monthly_cost": 91.41, "errors": 0, "api_calls": 694, "seconds": 27.3}
+  (an earlier recommender attempt without a quota project: 694 of 694 calls 403 SERVICE_DISABLED,
+   billed to gcloud's client project; fixed by quota_project_id=comglitn)
+
+By check (SQL: group by source, check_id):
+  recommender google.compute.image.IdleResourceRecommender     11  67.7972
+  recommender google.compute.instance.IdleResourceRecommender   1  16.3081
+  recommender google.compute.address.IdleResourceRecommender    1   7.3000
+  zombiescan  stopped-instance                                  8 180.4160
+  zombiescan  orphaned-snapshot                                10  53.1882
+  zombiescan  unused-static-ip                                  1   7.3000
+  zombiescan  stale-artifact-repository                         4   4.2038
+  zombiescan  stale-secret                                      8   0.5400
+  zombiescan  unmanaged-gcs-bucket                              2   0.0000
+  zombiescan  unused-firewall-rule                              2   0.0000
+
+Overlap (view findings_compared, key = project + kind + name):
+  recommender  only      11  67.7972
+  recommender  both       2  23.6081
+  zombiescan   only      33 177.1480
+  zombiescan   both       2  68.5000
+  both: compute-instance w3 (recommender 16.3081, zombiescan 61.2000), compute-address w1 (7.3000 each)
+
+AlloyDB Express: cluster create 3.5 s, instance create 3.1 s (gcloud `time`), state READY at once,
+but "background setup in progress" refused connections and updates for ~40 s more.
+PostgreSQL 18.4, max_connections 200, connector connect 3.3 s.
