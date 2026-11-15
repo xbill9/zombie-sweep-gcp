@@ -69,9 +69,7 @@ sweep's IAM deny does.
 
 ## Open questions
 
-1. **GCP project.** gcloud's active project is `comglitn`; CLAUDE.md's Cloud
-   Operator default is `glitnir-autocloud`. Which one hosts the sweep, and
-   which projects does it scan?
+1. **Scope.** The sweep runs in project `comglitn`. Which projects does it scan: `comglitn` only, or everything the service account can list?
 2. **AlloyDB cost.** The AWS sweep cost $0.0026 a sweep because DynamoDB
    on-demand costs nothing idle. An always-on AlloyDB cluster does not. A sprint
    entry cites an AlloyDB Express free tier and scale-to-zero — **unverified**;
