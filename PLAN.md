@@ -52,13 +52,14 @@ recommender list above.
 ```
 Cloud Scheduler (daily)
   -> Workflows
-       list projects (Resource Manager)
-       parallel for each project:
+       for project comglitn (more projects later):
          Cloud Run job: zombiescan-gcp checks for that project
          Cloud Run job: Recommender idle recommendations for that project
        report job
   -> AlloyDB: findings(run_id, source, project, check, resource, monthly_cost, reason, ...)
   -> report page on GCS behind a load balancer or Firebase Hosting
+
+  -> agent step: daily briefing written from SQL tool results
 
 Agent: ADK on Cloud Run, tools from MCP Toolbox for Databases against AlloyDB
   "what costs the most?", "what did Recommender miss?", "what changed since yesterday?"
@@ -101,8 +102,40 @@ Constraints that shape the build:
 - Not stated anywhere read: the exact create command, Cloud Run specifics,
   google_ml_integration, which MCP server the blog means.
 
+## The agent
+
+Two jobs, one ADK agent (Python, Gemini), its tools served by MCP Toolbox for
+Databases from AlloyDB:
+
+1. **In the pipeline.** The last Workflows step calls the agent once per sweep.
+   It writes the daily briefing at the top of the report page: what is new
+   since yesterday, what costs the most, what Recommender missed.
+2. **On demand.** The same agent on Cloud Run answers questions about the
+   findings: "what can I delete today and save the most?", "why is this disk a
+   zombie?", "which checks has Recommender never matched?"
+
+Every number comes from SQL, never from the model (CLAUDE.md: arithmetic
+belongs in code). The Toolbox tools are fixed, parameterised queries that
+return exact counts and sums:
+
+| Tool | Returns |
+|---|---|
+| `top_waste(run_id, n)` | the n most expensive findings |
+| `totals(run_id)` | findings and monthly cost by source and by check |
+| `recommender_gap(run_id)` | findings no Recommender recommendation matched |
+| `diff_runs(run_id, prev_run_id)` | new, resolved and unchanged findings |
+| `finding(resource)` | one finding's full row and its history |
+
+The agent's role is choosing the tool and writing the sentence; the briefing
+quotes the tool output. Read-only database role for the agent.
+
+Stretch: embed each finding's reason with AlloyDB AI and use a ScaNN index
+for "find findings like this one".
+
+## Scope
+
+Project `comglitn` only, for now: the sweep runs there and scans only there.
+
 ## Open questions
 
-1. **Scope.** The sweep runs in project `comglitn`. Which projects does it scan: `comglitn` only, or everything the service account can list?
-2. **Sprint registration** writes a row into a shared sheet: needs the author's
-   go-ahead.
+None blocking. Region is us-west1 (the only US region for Express).
