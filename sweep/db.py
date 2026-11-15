@@ -35,6 +35,11 @@ def local_credentials():
 
 
 def connect(connector: Connector):
+    """In Cloud Run, log in as the job's service account (IAM auth, no password);
+    on a workstation, as postgres with the password from Secret Manager."""
+    if os.environ.get("DB_IAM_USER"):
+        return connector.connect(URI, "pg8000", user=os.environ["DB_IAM_USER"], db="postgres",
+                                 enable_iam_auth=True, ip_type=IPTypes.PUBLIC)
     return connector.connect(
         URI, "pg8000", user="postgres", password=_password(), db="postgres",
         ip_type=IPTypes.PUBLIC,

@@ -1,0 +1,4 @@
+zombiescan-gcp @ git+https://github.com/xbill9/zombiescan-gcp@9c74922
+google-cloud-alloydb-connector[pg8000]
+google-api-python-client
+google-auth

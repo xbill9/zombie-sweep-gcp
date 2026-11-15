@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Apply sql/schema.sql to the AlloyDB Express instance."""
+"""Apply SQL files (default schema.sql, views.sql) to the AlloyDB Express instance:  python3 sql/apply.py grants.sql"""
 import pathlib, re, sys, time
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "sweep"))
 from google.cloud.alloydbconnector import Connector
@@ -20,7 +20,7 @@ with Connector(credentials=db.local_credentials()) as c:
     conn = db.connect(c); print(f"connected in {time.monotonic()-t:.1f}s")
     cur = conn.cursor()
     cur.execute("select version()"); print(cur.fetchone()[0][:70])
-    for name in ("schema.sql", "views.sql"):
+    for name in sys.argv[1:] or ("schema.sql", "views.sql"):
       for s in statements((pathlib.Path(__file__).parent / name).read_text()):
         cur.execute(s)
     conn.commit()

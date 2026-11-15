@@ -118,11 +118,29 @@ def run_recommender(project: str, creds) -> tuple[list[tuple], list[str], int]:
     return rows, errors, len(calls)
 
 
+# -------------------------------------------------------------------- finish
+def finish(run_id: str) -> None:
+    """Close the run and print its totals, computed in SQL."""
+    with Connector(credentials=db.local_credentials()) as connector:
+        conn = db.connect(connector)
+        cur = conn.cursor()
+        cur.execute("UPDATE runs SET finished_at = now(), status = 'DONE' WHERE run_id = %s", (run_id,))
+        cur.execute("SELECT source, count(*), coalesce(sum(monthly_cost), 0) FROM findings"
+                    " WHERE run_id = %s GROUP BY source ORDER BY source", (run_id,))
+        totals = {s: {"findings": n, "monthly_cost": float(round(c, 2))} for s, n, c in cur.fetchall()}
+        conn.commit()
+        conn.close()
+    print(json.dumps({"mode": "finish", "run_id": run_id, "totals": totals}))
+
+
 # ---------------------------------------------------------------------- main
 def main() -> None:
     mode, run_id = os.environ["MODE"], os.environ["RUN_ID"]
     project = os.environ.get("PROJECT_TO_SCAN", "comglitn")
     started = time.monotonic()
+    if mode == "finish":
+        finish(run_id)
+        return
     creds = credentials()
     calls = None
     if mode == "zombiescan":

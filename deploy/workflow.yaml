@@ -1,0 +1,48 @@
+# Daily sweep: both sources in parallel against one project, then close the run.
+# RUN_ID is this execution's id, so every row of one sweep shares it.
+main:
+  params: [args]
+  steps:
+    - init:
+        assign:
+          - project: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
+          - region: us-west1
+          - job: zombie-sweep
+          - target: ${default(map.get(args, "project"), "comglitn")}
+          - run_id: ${sys.get_env("GOOGLE_CLOUD_WORKFLOW_EXECUTION_ID")}
+          - results: {}
+    - sources:
+        parallel:
+          shared: [results]
+          for:
+            value: mode
+            in: ["zombiescan", "recommender"]
+            steps:
+              - run_source:
+                  call: googleapis.run.v2.projects.locations.jobs.run
+                  args:
+                    name: ${"projects/" + project + "/locations/" + region + "/jobs/" + job}
+                    body:
+                      overrides:
+                        containerOverrides:
+                          - env:
+                              - {name: MODE, value: "${mode}"}
+                              - {name: RUN_ID, value: "${run_id}"}
+                              - {name: PROJECT_TO_SCAN, value: "${target}"}
+                  result: execution
+              - keep:
+                  assign:
+                    - results[mode]: ${execution.status.succeededCount}
+    - finish:
+        call: googleapis.run.v2.projects.locations.jobs.run
+        args:
+          name: ${"projects/" + project + "/locations/" + region + "/jobs/" + job}
+          body:
+            overrides:
+              containerOverrides:
+                - env:
+                    - {name: MODE, value: finish}
+                    - {name: RUN_ID, value: "${run_id}"}
+                    - {name: PROJECT_TO_SCAN, value: "${target}"}
+    - done:
+        return: {run_id: "${run_id}", succeeded: "${results}"}
