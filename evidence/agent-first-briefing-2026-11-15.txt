@@ -1,0 +1,27 @@
+Agent deployed 2026-11-15: Cloud Run service zombie-sweep-agent (us-west1, private),
+containers app (ADK 2.14.1, toolbox-core 1.4.0, gemini-3.8-flash on Vertex AI) and
+toolbox (us-central1-docker.pkg.dev/database-toolbox/toolbox/toolbox:1.15.0).
+
+Sweep with briefing: workflow execution 64504ca2-89a9-4fce-818a-62094cd82505 SUCCEEDED,
+21:34:04Z -> 21:35:33Z; runs row DONE, started -> finished 53.4 s.
+
+Stored briefing, verbatim:
+Run 64504ca2-89a9-4fce-818a-62094cd82505 started at 2026-11-15T21:34:32.099787Z (filters: run_id 64504ca2-89a9-4fce-818a-62094cd82505): zombiescan found 35 findings costing 245.65 dollars a month; recommender found 13 findings costing 91.41 dollars a month.
+Top waste findings: w3 (zombiescan 61.2, recommender 16.31), //compute.googleapis.com/projects/comglitn/global/images/w5-opt (57.82), snapshot-w5-opt (53.19), debian13 (43.06), and windows (23.94).
+Versus previous run cfac17a9-b1ad-462f-99cd-d62e49c0ebf1: 48 findings costing 337.05 dollars a month are unchanged.
+Found only by recommender: 11 google.compute.image.IdleResourceRecommender findings costing 67.8 dollars a month.
+Found only by zombiescan: 7 stopped-instance (119.22), 10 orphaned-snapshot (53.19), 4 stale-artifact-repository (4.2), 8 stale-secret (0.54), 2 unmanaged-gcs-bucket (0), and 2 unused-firewall-rule (0).
+
+Checked against SQL run directly on the database (postgres user): top five by cost
+w3 61.20, w5-opt 57.82, snapshot-w5-opt 53.19, debian13 43.06, windows 23.94; w3 priced
+61.20 by zombiescan and 16.31 by Recommender; per source 35 / 245.65 and 13 / 91.41.
+Every figure in the briefing matches.
+
+Found on the way:
+  - Toolbox 1.15.0 with readOnly: true on an alloydb-postgres source suppressed all 8
+    postgres-sql tools ("Suppressing write-capable tool ... bound to read-only source",
+    "Initialized 0 tools"). postgres-sql defaults to destructive annotations
+    (internal/tools/postgres/postgressql/postgressql.go:79); each tool now declares
+    annotations: {readOnlyHint: true}. The session stays read-only at the database.
+  - Cloud Run reserves /healthz; the app serves /health.
+  - With --container, --cpu and --memory go after each --container.

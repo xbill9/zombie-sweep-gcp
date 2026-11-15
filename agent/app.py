@@ -126,7 +126,7 @@ async def briefing(body: Brief):
     return {"run_id": body.run_id, "briefing": text, "tool_calls": calls}
 
 
-@app.get("/healthz")
+@app.get("/health")  # /healthz is reserved by Cloud Run
 async def healthz():
     return {"tools": sorted(await tools())}
 

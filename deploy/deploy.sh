@@ -92,10 +92,10 @@ $G secrets add-iam-policy-binding zombie-sweep-tools --member="serviceAccount:$A
 AGENT_IMAGE=$REGION-docker.pkg.dev/$PROJECT/cloud-run-source-deploy/$AGENT:$(date -u +%Y%m%dT%H%M%S)
 $G builds submit "$HERE/agent" --tag="$AGENT_IMAGE" --region="$REGION" >/dev/null
 $G run deploy "$AGENT" --region="$REGION" --service-account="$AGENT_SA" --no-allow-unauthenticated \
-  --timeout=300 --cpu=1 --memory=1Gi --max-instances=2 \
-  --container=app --image="$AGENT_IMAGE" --port=8080 \
+  --timeout=300 --max-instances=2 \
+  --container=app --image="$AGENT_IMAGE" --port=8080 --cpu=1 --memory=1Gi \
     --set-env-vars="GOOGLE_GENAI_USE_VERTEXAI=TRUE,GOOGLE_CLOUD_PROJECT=$PROJECT,GOOGLE_CLOUD_LOCATION=global,PROJECT_TO_SCAN=$PROJECT" \
-  --container=toolbox --image="$TOOLBOX_IMAGE" \
+  --container=toolbox --image="$TOOLBOX_IMAGE" --cpu=1 --memory=512Mi \
     --args="--config=/app/tools.yaml,--address=127.0.0.1,--port=5000" \
     --set-secrets="/app/tools.yaml=zombie-sweep-tools:latest" \
     --set-env-vars="PROJECT=$PROJECT,REGION=$REGION,CLUSTER=$CLUSTER,INSTANCE=$CLUSTER-primary,DB_IAM_USER=$AGENT_DB_USER"

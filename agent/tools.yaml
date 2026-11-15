@@ -17,6 +17,8 @@ kind: tool
 name: list_runs
 type: postgres-sql
 source: findings-db
+# A read-only source suppresses postgres-sql tools unless they say they only read.
+annotations: {readOnlyHint: true}
 description: |
   The most recent sweeps, newest first: run_id, when it started and finished,
   status, and for each source the number of findings and their monthly cost.
@@ -41,6 +43,8 @@ kind: tool
 name: totals
 type: postgres-sql
 source: findings-db
+# A read-only source suppresses postgres-sql tools unless they say they only read.
+annotations: {readOnlyHint: true}
 description: |
   Findings and monthly cost for one run, by source (zombiescan or recommender)
   and by check, plus how many of each were also found by the other source.
@@ -65,6 +69,8 @@ kind: tool
 name: top_waste
 type: postgres-sql
 source: findings-db
+# A read-only source suppresses postgres-sql tools unless they say they only read.
+annotations: {readOnlyHint: true}
 description: |
   The n most expensive findings in one run, most expensive first, with the
   source, check, resource, monthly cost, reason and whether the other source
@@ -92,6 +98,8 @@ kind: tool
 name: count_findings
 type: postgres-sql
 source: findings-db
+# A read-only source suppresses postgres-sql tools unless they say they only read.
+annotations: {readOnlyHint: true}
 description: |
   Exact count, total, minimum and maximum monthly cost of the findings in one
   run that match every filter given. Any filter left out matches everything.
@@ -142,6 +150,8 @@ kind: tool
 name: only_one_source
 type: postgres-sql
 source: findings-db
+# A read-only source suppresses postgres-sql tools unless they say they only read.
+annotations: {readOnlyHint: true}
 description: |
   The findings in one run that only one source flagged: what Recommender
   missed (found_only_by zombiescan) and what zombiescan missed (found_only_by
@@ -163,6 +173,8 @@ kind: tool
 name: diff_vs_previous
 type: postgres-sql
 source: findings-db
+# A read-only source suppresses postgres-sql tools unless they say they only read.
+annotations: {readOnlyHint: true}
 description: |
   What changed between one run and the finished run before it. Rows with
   row_type 'summary' give the count and monthly cost of findings that are new,
@@ -202,6 +214,8 @@ kind: tool
 name: finding_history
 type: postgres-sql
 source: findings-db
+# A read-only source suppresses postgres-sql tools unless they say they only read.
+annotations: {readOnlyHint: true}
 description: |
   Every finding whose resource name contains the given text, across all runs,
   newest first (up to 50): which run, source, check, cost and reason. Use it to
@@ -221,6 +235,8 @@ kind: tool
 name: run_briefing
 type: postgres-sql
 source: findings-db
+# A read-only source suppresses postgres-sql tools unless they say they only read.
+annotations: {readOnlyHint: true}
 description: |
   The daily briefing stored for one run, with when the run started and
   finished. Omit run_id for the latest finished run.
