@@ -120,17 +120,21 @@ def run_recommender(project: str, creds) -> tuple[list[tuple], list[str], int]:
 
 # -------------------------------------------------------------------- finish
 def finish(run_id: str) -> None:
-    """Close the run and print its totals, computed in SQL."""
+    """Close the run, store the agent's briefing (env BRIEFING, from the workflow)
+    and print the run's totals, computed in SQL."""
     with Connector(credentials=db.local_credentials()) as connector:
         conn = db.connect(connector)
         cur = conn.cursor()
-        cur.execute("UPDATE runs SET finished_at = now(), status = 'DONE' WHERE run_id = %s", (run_id,))
+        cur.execute("UPDATE runs SET finished_at = now(), status = 'DONE',"
+                    " briefing = coalesce(nullif(%s, ''), briefing) WHERE run_id = %s",
+                    (os.environ.get("BRIEFING", ""), run_id))
         cur.execute("SELECT source, count(*), coalesce(sum(monthly_cost), 0) FROM findings"
                     " WHERE run_id = %s GROUP BY source ORDER BY source", (run_id,))
         totals = {s: {"findings": n, "monthly_cost": float(round(c, 2))} for s, n, c in cur.fetchall()}
         conn.commit()
         conn.close()
-    print(json.dumps({"mode": "finish", "run_id": run_id, "totals": totals}))
+    print(json.dumps({"mode": "finish", "run_id": run_id, "totals": totals,
+                      "briefing_chars": len(os.environ.get("BRIEFING", ""))}))
 
 
 # ---------------------------------------------------------------------- main

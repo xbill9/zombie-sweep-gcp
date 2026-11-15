@@ -7,3 +7,6 @@ GRANT USAGE ON SCHEMA public TO zombie_writer;
 GRANT SELECT, INSERT, UPDATE ON runs TO zombie_writer;
 GRANT SELECT, INSERT, DELETE ON findings TO zombie_writer;
 GRANT zombie_writer TO "zombie-sweep-job@comglitn.iam";
+
+-- The agent's service account reads only (MCP Toolbox also sets readOnly).
+GRANT zombie_reader TO "zombie-sweep-agent@comglitn.iam";

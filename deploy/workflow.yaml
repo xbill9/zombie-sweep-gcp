@@ -29,6 +29,21 @@ main:
                               - {name: MODE, value: "${mode}"}
                               - {name: RUN_ID, value: "${run_id}"}
                               - {name: PROJECT_TO_SCAN, value: "${target}"}
+    # The agent writes the briefing from the SQL tools. A failed briefing does
+    # not fail the sweep: the run closes without one.
+    - brief:
+        try:
+          call: http.post
+          args:
+            url: ${sys.get_env("AGENT_URL") + "/briefing"}
+            auth: {type: OIDC, audience: '${sys.get_env("AGENT_URL")}'}
+            body: {run_id: "${run_id}"}
+            timeout: 300
+          result: b
+        except:
+          as: err
+          assign:
+            - b: {body: {briefing: ""}}
     - finish:
         call: googleapis.run.v2.projects.locations.jobs.run
         args:
@@ -38,6 +53,7 @@ main:
               containerOverrides:
                 - env:
                     - {name: MODE, value: finish}
+                    - {name: BRIEFING, value: "${b.body.briefing}"}
                     - {name: RUN_ID, value: "${run_id}"}
                     - {name: PROJECT_TO_SCAN, value: "${target}"}
     - done:

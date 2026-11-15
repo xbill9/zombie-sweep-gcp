@@ -1,0 +1,4 @@
+google-adk==2.14.1
+toolbox-core==1.4.0
+fastapi
+uvicorn

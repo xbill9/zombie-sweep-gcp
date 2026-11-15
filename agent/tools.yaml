@@ -1,0 +1,235 @@
+# MCP Toolbox for Databases: the only SQL the agent and the report page run.
+# Every count, sum, minimum and maximum is computed here, never by the model.
+# run_id is optional everywhere: omitted, it means the latest finished run.
+kind: source
+name: findings-db
+type: alloydb-postgres
+project: ${PROJECT}
+region: ${REGION}
+cluster: ${CLUSTER}
+instance: ${INSTANCE}
+database: postgres
+user: ${DB_IAM_USER}
+ipType: public
+readOnly: true
+---
+kind: tool
+name: list_runs
+type: postgres-sql
+source: findings-db
+description: |
+  The most recent sweeps, newest first: run_id, when it started and finished,
+  status, and for each source the number of findings and their monthly cost.
+  Use it to find a run_id, or to see how waste has moved over time.
+statement: |
+  SELECT r.run_id, r.started_at, r.finished_at, r.status,
+         count(f.resource) FILTER (WHERE f.source = 'zombiescan')  AS zombiescan_findings,
+         round(coalesce(sum(f.monthly_cost) FILTER (WHERE f.source = 'zombiescan'), 0), 2)::float8 AS zombiescan_monthly_cost,
+         count(f.resource) FILTER (WHERE f.source = 'recommender') AS recommender_findings,
+         round(coalesce(sum(f.monthly_cost) FILTER (WHERE f.source = 'recommender'), 0), 2)::float8 AS recommender_monthly_cost
+  FROM runs r LEFT JOIN findings f USING (run_id)
+  GROUP BY r.run_id ORDER BY r.started_at DESC LIMIT $1
+parameters:
+  - name: n
+    type: integer
+    description: How many runs to return.
+    default: 10
+    minValue: 1
+    maxValue: 100
+---
+kind: tool
+name: totals
+type: postgres-sql
+source: findings-db
+description: |
+  Findings and monthly cost for one run, by source (zombiescan or recommender)
+  and by check, plus how many of each were also found by the other source.
+  The row with check_id 'ALL' is the source's total.
+statement: |
+  WITH r AS (SELECT coalesce($1::text, (SELECT run_id FROM runs WHERE status = 'DONE'
+                                        ORDER BY started_at DESC LIMIT 1)) AS id)
+  SELECT (SELECT id FROM r) AS run_id, source, coalesce(check_id, 'ALL') AS check_id,
+         count(*) AS findings,
+         round(sum(monthly_cost), 2)::float8 AS monthly_cost,
+         count(*) FILTER (WHERE found_by_both) AS also_found_by_other_source
+  FROM findings_compared WHERE run_id = (SELECT id FROM r)
+  GROUP BY GROUPING SETS ((source), (source, check_id))
+  ORDER BY source, check_id IS NOT NULL, monthly_cost DESC
+parameters:
+  - name: run_id
+    type: string
+    description: The run to total. Omit for the latest finished run.
+    required: false
+---
+kind: tool
+name: top_waste
+type: postgres-sql
+source: findings-db
+description: |
+  The n most expensive findings in one run, most expensive first, with the
+  source, check, resource, monthly cost, reason and whether the other source
+  found the same resource.
+statement: |
+  WITH r AS (SELECT coalesce($1::text, (SELECT run_id FROM runs WHERE status = 'DONE'
+                                        ORDER BY started_at DESC LIMIT 1)) AS id)
+  SELECT source, check_id, kind, name, location, resource,
+         round(monthly_cost, 2)::float8 AS monthly_cost, approximate, found_by_both, reason
+  FROM findings_compared WHERE run_id = (SELECT id FROM r)
+  ORDER BY monthly_cost DESC, resource LIMIT $2
+parameters:
+  - name: run_id
+    type: string
+    description: The run. Omit for the latest finished run.
+    required: false
+  - name: n
+    type: integer
+    description: How many findings to return.
+    default: 10
+    minValue: 1
+    maxValue: 100
+---
+kind: tool
+name: count_findings
+type: postgres-sql
+source: findings-db
+description: |
+  Exact count, total, minimum and maximum monthly cost of the findings in one
+  run that match every filter given. Any filter left out matches everything.
+  Use this for any "how many" or "how much" question; never count rows yourself.
+  min_monthly_cost is inclusive (>=).
+statement: |
+  WITH r AS (SELECT coalesce($1::text, (SELECT run_id FROM runs WHERE status = 'DONE'
+                                        ORDER BY started_at DESC LIMIT 1)) AS id)
+  SELECT (SELECT id FROM r) AS run_id, count(*) AS findings,
+         round(coalesce(sum(monthly_cost), 0), 2)::float8 AS total_monthly_cost,
+         round(min(monthly_cost), 2)::float8 AS min_monthly_cost,
+         round(max(monthly_cost), 2)::float8 AS max_monthly_cost
+  FROM findings_compared
+  WHERE run_id = (SELECT id FROM r)
+    AND ($2::text IS NULL OR source = $2::text)
+    AND ($3::text IS NULL OR check_id = $3::text)
+    AND ($4::text IS NULL OR kind = $4::text)
+    AND ($5::float8 IS NULL OR monthly_cost >= $5::float8)
+    AND ($6::boolean IS NULL OR found_by_both = $6::boolean)
+parameters:
+  - name: run_id
+    type: string
+    description: The run. Omit for the latest finished run.
+    required: false
+  - name: source
+    type: string
+    description: zombiescan or recommender.
+    required: false
+    allowedValues: ["zombiescan", "recommender"]
+  - name: check_id
+    type: string
+    description: A zombiescan check (e.g. stopped-instance) or a Recommender ID.
+    required: false
+  - name: kind
+    type: string
+    description: Resource kind, e.g. compute-instance, compute-disk, compute-address, compute-image.
+    required: false
+  - name: min_monthly_cost
+    type: float
+    description: Only findings costing at least this many dollars a month.
+    required: false
+  - name: found_by_both
+    type: boolean
+    description: true for resources both sources flagged, false for those only one flagged.
+    required: false
+---
+kind: tool
+name: only_one_source
+type: postgres-sql
+source: findings-db
+description: |
+  The findings in one run that only one source flagged: what Recommender
+  missed (found_only_by zombiescan) and what zombiescan missed (found_only_by
+  recommender), by check, with counts and monthly cost.
+statement: |
+  WITH r AS (SELECT coalesce($1::text, (SELECT run_id FROM runs WHERE status = 'DONE'
+                                        ORDER BY started_at DESC LIMIT 1)) AS id)
+  SELECT source AS found_only_by, check_id, count(*) AS findings,
+         round(sum(monthly_cost), 2)::float8 AS monthly_cost
+  FROM findings_compared WHERE run_id = (SELECT id FROM r) AND NOT found_by_both
+  GROUP BY source, check_id ORDER BY source, monthly_cost DESC
+parameters:
+  - name: run_id
+    type: string
+    description: The run. Omit for the latest finished run.
+    required: false
+---
+kind: tool
+name: diff_vs_previous
+type: postgres-sql
+source: findings-db
+description: |
+  What changed between one run and the finished run before it. Rows with
+  row_type 'summary' give the count and monthly cost of findings that are new,
+  resolved (gone) or unchanged; rows with row_type 'finding' list the new and
+  resolved findings themselves (up to 50). No rows means there is no earlier
+  finished run to compare with.
+statement: |
+  WITH cur AS (SELECT run_id, started_at FROM runs
+               WHERE run_id = coalesce($1::text, (SELECT run_id FROM runs WHERE status = 'DONE'
+                                                  ORDER BY started_at DESC LIMIT 1))),
+       prev AS (SELECT r.run_id FROM runs r, cur
+                WHERE r.status = 'DONE' AND r.started_at < cur.started_at
+                ORDER BY r.started_at DESC LIMIT 1),
+       a AS (SELECT source, check_id, resource, monthly_cost FROM findings WHERE run_id = (SELECT run_id FROM cur)),
+       b AS (SELECT source, check_id, resource, monthly_cost FROM findings WHERE run_id = (SELECT run_id FROM prev)),
+       d AS (SELECT source, check_id, resource,
+                    coalesce(a.monthly_cost, b.monthly_cost) AS monthly_cost,
+                    CASE WHEN b.resource IS NULL THEN 'new' WHEN a.resource IS NULL THEN 'resolved'
+                         ELSE 'unchanged' END AS change
+             FROM a FULL JOIN b USING (source, check_id, resource)
+             WHERE EXISTS (SELECT 1 FROM prev))
+  SELECT 'summary' AS row_type, change, NULL::text AS source, NULL::text AS check_id, NULL::text AS resource,
+         count(*) AS findings, round(sum(monthly_cost), 2)::float8 AS monthly_cost,
+         (SELECT run_id FROM cur) AS run_id, (SELECT run_id FROM prev) AS previous_run_id
+  FROM d GROUP BY change
+  UNION ALL
+  SELECT * FROM (SELECT 'finding', change, source, check_id, resource, 1::bigint,
+                        round(monthly_cost, 2)::float8, (SELECT run_id FROM cur), (SELECT run_id FROM prev)
+                 FROM d WHERE change <> 'unchanged' ORDER BY monthly_cost DESC LIMIT 50) x
+parameters:
+  - name: run_id
+    type: string
+    description: The run to compare with the one before it. Omit for the latest finished run.
+    required: false
+---
+kind: tool
+name: finding_history
+type: postgres-sql
+source: findings-db
+description: |
+  Every finding whose resource name contains the given text, across all runs,
+  newest first (up to 50): which run, source, check, cost and reason. Use it to
+  explain why a resource is flagged and how long it has been.
+statement: |
+  SELECT f.run_id, r.started_at, f.source, f.check_id, f.resource,
+         round(f.monthly_cost, 2)::float8 AS monthly_cost, f.reason
+  FROM findings f JOIN runs r USING (run_id)
+  WHERE f.resource ILIKE '%' || $1::text || '%'
+  ORDER BY r.started_at DESC, f.source LIMIT 50
+parameters:
+  - name: text
+    type: string
+    description: Part of a resource name, e.g. a disk or instance name.
+---
+kind: tool
+name: run_briefing
+type: postgres-sql
+source: findings-db
+description: |
+  The daily briefing stored for one run, with when the run started and
+  finished. Omit run_id for the latest finished run.
+statement: |
+  SELECT run_id, started_at, finished_at, status, briefing FROM runs
+  WHERE run_id = coalesce($1::text, (SELECT run_id FROM runs WHERE status = 'DONE'
+                                     ORDER BY started_at DESC LIMIT 1))
+parameters:
+  - name: run_id
+    type: string
+    description: The run. Omit for the latest finished run.
+    required: false
