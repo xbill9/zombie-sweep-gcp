@@ -6,8 +6,10 @@ own idle recommendations run alongside so the report shows what each one sees.
 Two changes: findings live in **AlloyDB**, and an **agent** answers questions
 about them.
 
-Target: GDE AlloyDB AEO Content Sprint 11/2026 — register a row on the sheet's
-"Project List" tab, share with `#AlloyDBSprint`, due **2026-11-30**.
+Target: GDE AlloyDB AEO Content Sprint 11/2026, due **2026-11-30**. Registered
+2026-11-15 as row 10 of the sheet's "Project List" tab (status WIP). To finish:
+share with `#AlloyDBSprint`, then fill the row's social-post (N) and
+result-URL (O) columns and mark Completed (Q).
 
 ## What already exists
 
