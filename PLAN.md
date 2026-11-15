@@ -67,12 +67,42 @@ Agent: ADK on Cloud Run, tools from MCP Toolbox for Databases against AlloyDB
 Read-only service account; deny secret payload and object reads, as the AWS
 sweep's IAM deny does.
 
+## Database: AlloyDB Express
+
+Sources, read 2026-11-15: the launch post (2026-11-04, preview)
+https://cloud.google.com/blog/products/databases/introducing-alloydb-express-for-rapid-testing-and-prototyping
+and https://docs.cloud.google.com/alloydb/docs/express-overview (Pre-GA terms).
+
+Why it fits a once-a-day sweep the way DynamoDB on-demand fit the AWS one:
+
+- Compute pauses after 15 minutes idle and costs $0.00 while paused (blog);
+  resumes on the next connection in about 20 s (docs; the blog says "seconds").
+- $0.115 per CU-hour, billed per second; 1 or 2 CU (1 vCPU/4 GB, 2 vCPU/8 GB).
+- Storage $0.30 per GB-month for what is used, up to 20 GB, then writes stop.
+- Free tier: 50 compute units and 2 GB a month per billing account, "for the
+  first 12 months" (docs; the blog gives no time limit).
+- Full AlloyDB AI: pgvector, ScaNN, natural-language queries, Gemini from SQL.
+- Auth Proxy and the Python connector work; IAM database auth supported.
+- One-way, in-place upgrade to a full AlloyDB cluster keeps the connection string.
+
+Estimate (arithmetic, `python3` in the session, not measured): each sweep
+bills its run time plus the 15-minute idle tail. 30 sweeps a month at 1 CU is
+8.5–10 CU-hours, $0.98–$1.15 before the free tier; at 2 CU, $1.96–$2.30.
+Agent questions wake it too and add their own 15-minute tails.
+
+Constraints that shape the build:
+
+- Regions: asia-east1, asia-east2, asia-northeast1, asia-southeast1,
+  australia-southeast1, europe-west2, **us-west1** — the only US one.
+- No public IP: public DNS endpoint or Private Service Connect.
+- No SLA, no HA, no backups or PITR, no CMEK, PostgreSQL 18 only,
+  max_connections fixed at 200.
+- Terraform not supported (docs; the blog says it is) — create with gcloud.
+- Not stated anywhere read: the exact create command, Cloud Run specifics,
+  google_ml_integration, which MCP server the blog means.
+
 ## Open questions
 
 1. **Scope.** The sweep runs in project `comglitn`. Which projects does it scan: `comglitn` only, or everything the service account can list?
-2. **AlloyDB cost.** The AWS sweep cost $0.0026 a sweep because DynamoDB
-   on-demand costs nothing idle. An always-on AlloyDB cluster does not. A sprint
-   entry cites an AlloyDB Express free tier and scale-to-zero — **unverified**;
-   check the pricing page before choosing the cluster type.
-3. **Sprint registration** writes a row into a shared sheet: needs the author's
+2. **Sprint registration** writes a row into a shared sheet: needs the author's
    go-ahead.
