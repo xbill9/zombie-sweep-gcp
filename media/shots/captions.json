@@ -1,0 +1,10 @@
+[
+ ["1-top.jpg", "The report page, behind IAP: Google sign-in, no proxy. It shows the run that just finished, with the agent's briefing.", 6500],
+ ["1-top.jpg", "Each source's monthly total comes from a SQL tool in MCP Toolbox.", 5000],
+ ["2-ask.jpg", "Ask it a question. The agent calls count_findings with the filters the question needs; SQL counts and sums.", 7500],
+ ["2-ask.jpg", "5 zombiescan findings at $10 a month or more, $111.94 in total. A direct SQL query on the same run returns the same numbers.", 7500],
+ ["3-expensive.jpg", "Most expensive first: a snapshot of a deleted disk, stopped VMs whose disks still bill, a static IP attached to nothing.", 7500],
+ ["3-expensive.jpg", "The static IP w1 is the one resource both sources flagged, each at $7.30 a month.", 6000],
+ ["4-one-source.jpg", "Everything else came from zombiescan alone: snapshots, stopped instances, stale repositories and secrets.", 7000],
+ ["5-runs.jpg", "Every sweep adds a row, so a resource cleaned up drops out the next day.", 6000]
+]
