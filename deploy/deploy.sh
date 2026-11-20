@@ -26,7 +26,7 @@ fi
 sa() { $G iam service-accounts describe "$1@$PROJECT.iam.gserviceaccount.com" >/dev/null 2>&1 ||
        $G iam service-accounts create "$1" --display-name="$2"; }
 # A new service account can take a minute to be visible to IAM; retry.
-bind() { for i in 1 2 3 4 5 6 7 8; do
+bind() { for _ in 1 2 3 4 5 6 7 8; do
            $G projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:$1" --role="$2" \
              --condition=None >/dev/null 2>&1 && { echo "bound $2 -> $1"; return; }; sleep 15; done
          echo "could not bind $2 -> $1" >&2; return 1; }

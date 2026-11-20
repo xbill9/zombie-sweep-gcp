@@ -16,7 +16,6 @@ import asyncio
 import html
 import json
 import os
-import uuid
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
