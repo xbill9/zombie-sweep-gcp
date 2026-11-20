@@ -1,0 +1,6 @@
+Source: https://cloud.google.com/blog/products/databases/introducing-alloydb-express-for-rapid-testing-and-prototyping
+Fetched 2026-11-20 with curl; text extracted from HTML, verbatim.
+
+Scale-to-zero: Your database automatically pauses after 15 minutes of inactivity so you do not incur costs for compute while it is idle. When a new query arrives, it wakes up automatically in seconds. Enterprise-ready with built-in AI and security: Access ente
+
+Here is a short summary of our pricing: Active compute: $0.115 per Compute Unit hour (CU-hr), billed by the second. Paused compute: $0.00 per hour when idle for more than 15 mins. Used storage: $0.30 per GB-month, billed only for the disk space your data actually uses. In addition, Google Cloud offers a free tier, making it easier to get started with 50 free CUs every month. For more details see the AlloyDB Express pricing . Get started today AlloyDB Express is available today in preview. Try it in the Google Cloud console or read the AlloyDB Express documentation page for more details on how to get started. Posted in Databases Related articles Databases DynaPORT modernization on Google Clou

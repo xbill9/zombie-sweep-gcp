@@ -1,0 +1,46 @@
+python3 .claude/skills/check-briefing/check.py 854715f3-1beb-4f35-8f4e-30f9f02f14d3   (2026-11-20)
+run_id 854715f3-1beb-4f35-8f4e-30f9f02f14d3  started 2026-11-20 17:22:08.746426+00:00  status DONE
+
+=== briefing ===
+Run 854715f3-1beb-4f35-8f4e-30f9f02f14d3 started at 2026-11-20T17:22:08.746426Z (no filters).
+Totals by source: zombiescan has 27 findings costing 128.86 dollars a month; recommender has 1 findings costing 7.3 dollars a month.
+Top waste: snapshot-w5-opt (53.19), windows (23.94), debian13b (13.06), w1 (10.88), and w2 (10.88).
+Diff vs previous run fe2aac43-c1a1-49d4-8645-1afbd80ff204: 28 findings costing 136.16 are unchanged.
+Only zombiescan found: stopped-instance (5 findings, 65.28), orphaned-snapshot (5 findings, 53.19), stale-artifact-repository (4 findings, 2.55), stale-secret (8 findings, 0.54), unmanaged-gcs-bucket (2 findings, 0), and unused-firewall-rule (2 findings, 0).
+
+=== by source ===
+source	count	sum	min	max
+recommender	1	7.3000	7.3000	7.3000
+zombiescan	27	128.8584	0.0000	53.1882
+
+=== all sources ===
+count	sum
+28	136.1584
+
+=== found by both / one source ===
+source	found_by_both	count	sum
+recommender	True	1	7.3000
+zombiescan	False	26	121.5584
+zombiescan	True	1	7.3000
+
+=== only one source, by check ===
+source	check_id	count	sum
+zombiescan	stopped-instance	5	65.2800
+zombiescan	orphaned-snapshot	5	53.1882
+zombiescan	stale-artifact-repository	4	2.5502
+zombiescan	stale-secret	8	0.5400
+zombiescan	unmanaged-gcs-bucket	2	0.0000
+zombiescan	unused-firewall-rule	2	0.0000
+
+=== top 10 by monthly cost ===
+source	check_id	resource	monthly_cost	approximate
+zombiescan	orphaned-snapshot	snapshot-w5-opt	53.1882	False
+zombiescan	stopped-instance	windows	23.9360	False
+zombiescan	stopped-instance	debian13b	13.0560	False
+zombiescan	stopped-instance	w1	10.8800	False
+zombiescan	stopped-instance	w2	10.8800	False
+recommender	google.compute.address.IdleResourceRecommender	//compute.googleapis.com/projects/comglitn/regions/us-central1/addresses/w1	7.3000	False
+zombiescan	unused-static-ip	w1	7.3000	False
+zombiescan	stopped-instance	rocky9	6.5280	False
+zombiescan	stale-artifact-repository	gcr.io	2.4255	True
+zombiescan	stale-secret	hf-token	0.1200	False

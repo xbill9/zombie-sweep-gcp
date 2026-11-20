@@ -1,0 +1,29 @@
+run at 2026-11-20T19:28:59+00:00  project comglitn  region us-west1
+
+Prices (Cloud Billing Catalog API):
+  price  AlloyDB Express Instance Compute in Oregon: [(0, 0.0), (50, 0.115)]  (hour)
+  price  AlloyDB Express Cluster Database Storage in Oregon: [(0, 0.0), (2, 0.3)]  (gibibyte month)
+  price  Jobs CPU in us-west1: [(0, 1.8e-05)]  (second)
+  price  Jobs Memory in us-west1: [(0, 2e-06)]  (gibibyte second)
+  price  Services CPU (Request-based billing): [(0, 2.4e-05)]  (second)
+  price  Services Memory (Request-based billing): [(0, 2.5e-06)]  (gibibyte second)
+
+Measured usage:
+  AlloyDB Express instance: 1 vCPU = 1 compute unit(s)
+  sweep job executions: 37, 903.4 s in total, mean 24.4 s (1 vCPU, 1 GiB each)
+  successful sweeps: 11, 54-127 s end to end
+  agent briefings: 7, mean 31.6 s (2 vCPU, 1.5 GiB across app + Toolbox)
+  database size: 17880855 bytes = 0.0167 GiB
+
+One month = 30 daily sweeps:
+  AlloyDB compute: 7.95-8.56 CU-hours (sweep time + 15 min idle tail)
+    list price $0.91-$0.98; with 50 free CU-hours $0.00
+  AlloyDB storage: list $0.0050; within 2 GiB free tier: $0.00
+  Cloud Run job, 3 executions a sweep: $0.0439
+  Cloud Run agent, one briefing a sweep: $0.0491
+  free CU-hours left after the sweeps: 41.44, about 166 more 15-minute wake-ups
+  total, upper end: $1.08 at list price; $0.09 within the AlloyDB free tier
+
+The most AlloyDB Express can bill in a month (instance never idle, storage full):
+  1 CU: compute 1 x 730 h x $0.115 = $83.95, storage 20 GB x $0.3 = $6.00, ceiling $89.95
+  2 CU: compute 2 x 730 h x $0.115 = $167.90, storage 20 GB x $0.3 = $6.00, ceiling $173.90

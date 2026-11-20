@@ -1,0 +1,32 @@
+repo facts, 2026-11-20 (zombiescan-gcp 0.1.0 as pinned in sweep/requirements.txt)
+zombiescan-gcp checks: 20
+  disabled-kms-key: Disabled KMS key versions still billing
+  empty-vpc-network: VPC networks with nothing running in them
+  gke-idle-cluster: GKE clusters running no nodes
+  idle-cloud-nat: Cloud NAT gateways serving no instances
+  idle-filestore: Filestore instances nothing can mount
+  idle-forwarding-rule: Load balancers with no backends
+  orphaned-snapshot: Snapshots of deleted disks
+  stale-artifact-repository: Artifact Registry repositories with no recent pushes
+  stale-secret: Secrets nothing has updated in 90 days
+  stopped-instance: Stopped instances still paying for disks
+  stopped-sql-instance: Stopped Cloud SQL instances still paying for storage
+  unattached-disk: Unattached Persistent Disks
+  unbounded-log-bucket: Log buckets retaining logs indefinitely
+  unmanaged-gcs-bucket: Versioned buckets with no lifecycle rule
+  unused-dns-zone: Cloud DNS zones publishing nothing
+  unused-firewall-rule: Firewall rules matching nothing
+  unused-image: Custom images nothing boots from
+  unused-static-ip: Unused static IP addresses
+  unused-subnet: Subnets reserving ranges nothing uses
+  unused-uptime-check: Uptime checks monitoring deleted resources
+Toolbox tools: 8 list_runs, totals, top_waste, count_findings, only_one_source, diff_vs_previous, finding_history, run_briefing
+tools with readOnlyHint: 8
+Recommender IDs: 7
+  google.compute.instance.IdleResourceRecommender
+  google.compute.disk.IdleResourceRecommender
+  google.compute.address.IdleResourceRecommender
+  google.compute.image.IdleResourceRecommender
+  google.compute.IdleResourceRecommender
+  google.cloudsql.instance.IdleRecommender
+  google.container.DiagnosisRecommender

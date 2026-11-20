@@ -1,0 +1,4 @@
+gcloud beta alloydb clusters create --help | grep enable-express ; instances create --help (gcloud 594.0.0, 2026-11-20)
+        [[1m--cpu-count[m=[4mCPU_COUNT[m] [[1m--database-flags[m=[4mFLAG[m=[4mVALUE[m,[[4mFLAG[m=[4mVALUE[m,...]]
+            --instance-type=PRIMARY --cpu-count=4
+            --instance-type=READ_POOL --read-pool-node-count=1 --cpu-count=4

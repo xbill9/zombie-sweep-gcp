@@ -1,0 +1,7 @@
+Operation ID: operation-1794771532092-66055cf9f94ae-bfd1ed51-638591a7
+Creating cluster...
+.......done.
+
+real	0m3.463s
+user	0m0.755s
+sys	0m0.066s
