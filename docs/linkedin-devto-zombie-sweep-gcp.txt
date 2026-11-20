@@ -1,0 +1,17 @@
+Zombie Sweep on Google Cloud: A Daily Waste Report on AlloyDB Express, With a Database Bill You Can Predict
+
+Cloud Scheduler, Workflows and Cloud Run sweep a project every day with zombiescan's 20 checks beside Google's idle-resource recommenders, store the findings in AlloyDB Express, and an ADK agent writes a briefing from SQL. The database scales to zero, caps its own storage and has a monthly ceiling you can work out in advance.
+
+What is in it:
+
+- 🟢 Two sources per sweep: zombiescan's 20 checks and 7 Recommender idle recommenders
+- 🟢 28 findings, $136.16 a month, one resource found by both sources
+- 🟢 Every figure in the agent's briefing matches SQL run on the same data
+- 🟢 $0.09 a month within the Express free tier, $1.08 at list price
+
+dev.to (Google Developer Experts): https://dev.to/gde/zombie-sweep-on-google-cloud-a-daily-waste-report-on-alloydb-express-with-a-database-bill-you-can-305g
+Medium: https://medium.com/@xbill999/zombie-sweep-on-google-cloud-a-daily-waste-report-on-alloydb-express-with-a-database-bill-you-can-ecd3112006d8
+Substack: https://xbill9.substack.com/p/zombie-sweep-on-google-cloud-a-daily
+GitHub: https://github.com/xbill9/zombie-sweep-gcp
+
+#GoogleCloud #AlloyDB #PostgreSQL #FinOps
