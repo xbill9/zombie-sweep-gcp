@@ -1,0 +1,20 @@
+SQL on AlloyDB Express, run 854715f3-1beb-4f35-8f4e-30f9f02f14d3, 2026-11-20; sums rounded to cents in SQL
+
+by source
+  recommender  1  7.30
+  zombiescan  27  128.86
+
+all
+  28  136.16
+
+found by both
+  recommender  compute-address  w1  7.30
+  zombiescan  compute-address  w1  7.30
+
+only one source, by check
+  zombiescan  orphaned-snapshot  5  53.19
+  zombiescan  stale-artifact-repository  4  2.55
+  zombiescan  stale-secret  8  0.54
+  zombiescan  stopped-instance  5  65.28
+  zombiescan  unmanaged-gcs-bucket  2  0.00
+  zombiescan  unused-firewall-rule  2  0.00

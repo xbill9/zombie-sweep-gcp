@@ -352,7 +352,7 @@ The goal of this article was to run a daily sweep for unused Google Cloud resour
 - ⚠️ AlloyDB Express is a preview, with no backups, no high availability and no SLA
 - ❌ Gemini tokens for the briefing are not priced here
 
-Scope: one Google Cloud project in us-west1, swept daily from 2026-11-15 to 2026-11-20, one 1 vCPU AlloyDB Express instance. Costs are estimates from Cloud Billing Catalog list prices and measured run times, not a bill; AlloyDB active hours assume the 15-minute idle period from the launch post. They exclude Gemini, Secret Manager, Workflows, Cloud Scheduler, Artifact Registry, Cloud Build and logging. The sweep is read-only and deletes nothing.
+Scope: one Google Cloud project in us-west1, swept daily from 2026-11-15 to 2026-11-20, one 1 vCPU AlloyDB Express instance. Costs are estimates from Cloud Billing Catalog list prices and measured run times. AlloyDB active hours assume the 15-minute idle period from the launch post. They exclude Gemini, Secret Manager, Workflows, Cloud Scheduler, Artifact Registry, Cloud Build and logging. The sweep is read-only and deletes nothing.
 
 The strategy for using AlloyDB Express as the store for a daily waste sweep was validated with an incremental step by step approach.
 
@@ -365,6 +365,6 @@ The strategy for using AlloyDB Express as the store for a daily waste sweep was 
 - [AlloyDB Express overview](https://docs.cloud.google.com/alloydb/docs/express-overview)
 - [Introducing AlloyDB Express](https://cloud.google.com/blog/products/databases/introducing-alloydb-express-for-rapid-testing-and-prototyping)
 - [Recommender: list of recommenders](https://docs.cloud.google.com/recommender/docs/recommenders)
-- [MCP Toolbox for Databases](https://github.com/googleapis/genai-toolbox)
+- [MCP Toolbox for Databases](https://github.com/googleapis/mcp-toolbox)
 - [IAP for Cloud Run](https://docs.cloud.google.com/run/docs/securing/identity-aware-proxy-cloud-run)
 - [Zombie Sweep on AWS](https://dev.to/aws-builders/zombie-sweep-a-daily-serverless-hunt-for-unused-aws-resources-1ph1)
