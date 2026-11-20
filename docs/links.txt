@@ -5,3 +5,4 @@ substack   = https://xbill9.substack.com/p/zombie-sweep-on-google-cloud-a-daily
 linkedin-article = https://www.linkedin.com/pulse/zombie-sweep-google-cloud-daily-waste-report-alloydb-express-mclean-qjjmc/
 repo       = https://github.com/xbill9/zombie-sweep-gcp
 linkedin   = https://www.linkedin.com/feed/update/urn:li:activity:7529637053253279744/
+youtube    = https://youtu.be/4w_AB3Eev-c
