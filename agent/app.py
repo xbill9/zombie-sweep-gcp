@@ -84,6 +84,8 @@ async def tools() -> dict:
 async def call(name: str, **kwargs) -> list[dict]:
     raw = await (await tools())[name](**kwargs)
     data = json.loads(raw) if raw else []
+    if isinstance(data, dict):  # Toolbox returns a bare object for a one-row result
+        data = [data]
     return data or []
 
 

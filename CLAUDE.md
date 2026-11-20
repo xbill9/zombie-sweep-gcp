@@ -12,6 +12,8 @@ GCP project is `comglitn`, region `us-west1` (defaults in `deploy/deploy.sh`, `s
 - Apply SQL: `python3 sql/apply.py` (schema.sql + views.sql); `python3 sql/apply.py grants.sql` only after deploy.sh has created the IAM DB users.
 - Run the job locally: `MODE=zombiescan RUN_ID=<id> PROJECT_TO_SCAN=comglitn python3 sweep/job.py`.
 - Locally, `sweep/db.py` connects as `postgres` (password from secret `zombie-sweep-db-password`, gcloud token with quota project). In Cloud Run it uses IAM DB auth via `DB_IAM_USER`.
+- View the report page: `gcloud --project=comglitn run services proxy zombie-sweep-agent --region=us-west1 --port=8765` → http://127.0.0.1:8765 (8080 is taken on this machine). deploy.sh grants the deploying account invoker and adds `VIEWER_AUD`, the audience of this workstation's gcloud identity tokens; without it Cloud Run returns 401 "access token could not be verified".
+- Toolbox returns a bare object, not a list, for a one-row result; `call()` in `agent/app.py` normalizes it.
 - No tests or CI. Verification is checking figures against SQL; record results in `evidence/<what>-<YYYY-MM-DD>.txt`.
 
 ## Rules

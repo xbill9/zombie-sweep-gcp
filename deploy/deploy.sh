@@ -14,6 +14,10 @@ JOB_SA=zombie-sweep-job@$PROJECT.iam.gserviceaccount.com
 WF_SA=zombie-sweep-workflow@$PROJECT.iam.gserviceaccount.com
 AGENT=zombie-sweep-agent
 AGENT_SA=zombie-sweep-agent@$PROJECT.iam.gserviceaccount.com
+# Audience of the identity tokens gcloud issues on this workstation; Cloud Run
+# rejects them ("access token could not be verified") unless it is listed.
+VIEWER_AUD=${VIEWER_AUD:-681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com}
+VIEWER=${VIEWER:-user:$(gcloud config get-value account 2>/dev/null)}
 TOOLBOX_IMAGE=us-central1-docker.pkg.dev/database-toolbox/toolbox/toolbox:1.15.0
 HERE=$(cd "$(dirname "$0")/.." && pwd)
 G="gcloud --project=$PROJECT --quiet"
@@ -92,7 +96,7 @@ $G secrets add-iam-policy-binding zombie-sweep-tools --member="serviceAccount:$A
 AGENT_IMAGE=$REGION-docker.pkg.dev/$PROJECT/cloud-run-source-deploy/$AGENT:$(date -u +%Y%m%dT%H%M%S)
 $G builds submit "$HERE/agent" --tag="$AGENT_IMAGE" --region="$REGION" >/dev/null
 $G run deploy "$AGENT" --region="$REGION" --service-account="$AGENT_SA" --no-allow-unauthenticated \
-  --timeout=300 --max-instances=2 \
+  --timeout=300 --max-instances=2 --add-custom-audiences="$VIEWER_AUD" \
   --container=app --image="$AGENT_IMAGE" --port=8080 --cpu=1 --memory=1Gi \
     --set-env-vars="GOOGLE_GENAI_USE_VERTEXAI=TRUE,GOOGLE_CLOUD_PROJECT=$PROJECT,GOOGLE_CLOUD_LOCATION=global,PROJECT_TO_SCAN=$PROJECT" \
   --container=toolbox --image="$TOOLBOX_IMAGE" --cpu=1 --memory=512Mi \
@@ -102,6 +106,9 @@ $G run deploy "$AGENT" --region="$REGION" --service-account="$AGENT_SA" --no-all
 AGENT_URL=$($G run services describe "$AGENT" --region="$REGION" --format='value(status.url)')
 $G run services add-iam-policy-binding "$AGENT" --region="$REGION" \
   --member="serviceAccount:$WF_SA" --role=roles/run.invoker >/dev/null
+# The person deploying can open the report page: gcloud run services proxy zombie-sweep-agent
+$G run services add-iam-policy-binding "$AGENT" --region="$REGION" \
+  --member="$VIEWER" --role=roles/run.invoker >/dev/null
 
 $G workflows deploy "$WF" --location="$REGION" --source="$HERE/deploy/workflow.yaml" \
   --service-account="$WF_SA" --set-env-vars="AGENT_URL=$AGENT_URL"
