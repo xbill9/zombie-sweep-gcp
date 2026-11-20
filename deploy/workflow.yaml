@@ -31,15 +31,36 @@ main:
                               - {name: PROJECT_TO_SCAN, value: "${target}"}
     # The agent writes the briefing from the SQL tools. A failed briefing does
     # not fail the sweep: the run closes without one.
+    # The agent sits behind IAP, which takes a JWT signed by this workflow's
+    # service account with aud = the URL (OIDC tokens from Workflows are rejected).
     - brief:
         try:
-          call: http.post
-          args:
-            url: ${sys.get_env("AGENT_URL") + "/briefing"}
-            auth: {type: OIDC, audience: '${sys.get_env("AGENT_URL")}'}
-            body: {run_id: "${run_id}"}
-            timeout: 300
-          result: b
+          steps:
+            - claims:
+                assign:
+                  - now: ${int(sys.now())}
+                  - claims:
+                      iss: ${sys.get_env("WF_SA")}
+                      sub: ${sys.get_env("WF_SA")}
+                      aud: ${sys.get_env("AGENT_URL") + "/*"}
+                      iat: ${now}
+                      exp: ${now + 900}
+            - sign:
+                call: http.post
+                args:
+                  url: ${"https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/" + sys.get_env("WF_SA") + ":signJwt"}
+                  auth: {type: OAuth2}
+                  body:
+                    payload: ${json.encode_to_string(claims)}
+                result: jwt
+            - post:
+                call: http.post
+                args:
+                  url: ${sys.get_env("AGENT_URL") + "/briefing"}
+                  headers: {Authorization: '${"Bearer " + jwt.body.signedJwt}'}
+                  body: {run_id: "${run_id}"}
+                  timeout: 300
+                result: b
         except:
           as: err
           assign:

@@ -14,9 +14,7 @@ JOB_SA=zombie-sweep-job@$PROJECT.iam.gserviceaccount.com
 WF_SA=zombie-sweep-workflow@$PROJECT.iam.gserviceaccount.com
 AGENT=zombie-sweep-agent
 AGENT_SA=zombie-sweep-agent@$PROJECT.iam.gserviceaccount.com
-# Audience of the identity tokens gcloud issues on this workstation; Cloud Run
-# rejects them ("access token could not be verified") unless it is listed.
-VIEWER_AUD=${VIEWER_AUD:-681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com}
+# Who may open the report page in a browser (IAP, Google sign-in).
 VIEWER=${VIEWER:-user:$(gcloud config get-value account 2>/dev/null)}
 TOOLBOX_IMAGE=us-central1-docker.pkg.dev/database-toolbox/toolbox/toolbox:1.15.0
 HERE=$(cd "$(dirname "$0")/.." && pwd)
@@ -90,13 +88,18 @@ $G beta services identity create --service=workflows.googleapis.com >/dev/null
 # holds no secrets; Secret Manager is how Cloud Run mounts it as a file.
 $G secrets describe zombie-sweep-tools >/dev/null 2>&1 ||
   $G secrets create zombie-sweep-tools --replication-policy=automatic >/dev/null
-$G secrets versions add zombie-sweep-tools --data-file="$HERE/agent/tools.yaml" >/dev/null
+NEW_TOOLS=$($G secrets versions add zombie-sweep-tools --data-file="$HERE/agent/tools.yaml" --format='value(name.basename())')
+# Only the newest version is used (mounted as :latest); disable the rest so they stop piling up.
+$G secrets versions list zombie-sweep-tools --format='value(name.basename(),state)' |
+  while read -r v state; do
+    [[ "$v" != "$NEW_TOOLS" && "${state,,}" == enabled ]] && $G secrets versions disable "$v" --secret=zombie-sweep-tools >/dev/null
+  done
 $G secrets add-iam-policy-binding zombie-sweep-tools --member="serviceAccount:$AGENT_SA" \
   --role=roles/secretmanager.secretAccessor >/dev/null
 AGENT_IMAGE=$REGION-docker.pkg.dev/$PROJECT/cloud-run-source-deploy/$AGENT:$(date -u +%Y%m%dT%H%M%S)
 $G builds submit "$HERE/agent" --tag="$AGENT_IMAGE" --region="$REGION" >/dev/null
 $G run deploy "$AGENT" --region="$REGION" --service-account="$AGENT_SA" --no-allow-unauthenticated \
-  --timeout=300 --max-instances=2 --add-custom-audiences="$VIEWER_AUD" \
+  --timeout=300 --max-instances=2 --iap \
   --container=app --image="$AGENT_IMAGE" --port=8080 --cpu=1 --memory=1Gi \
     --set-env-vars="GOOGLE_GENAI_USE_VERTEXAI=TRUE,GOOGLE_CLOUD_PROJECT=$PROJECT,GOOGLE_CLOUD_LOCATION=global,PROJECT_TO_SCAN=$PROJECT" \
   --container=toolbox --image="$TOOLBOX_IMAGE" --cpu=1 --memory=512Mi \
@@ -106,12 +109,25 @@ $G run deploy "$AGENT" --region="$REGION" --service-account="$AGENT_SA" --no-all
 AGENT_URL=$($G run services describe "$AGENT" --region="$REGION" --format='value(status.url)')
 $G run services add-iam-policy-binding "$AGENT" --region="$REGION" \
   --member="serviceAccount:$WF_SA" --role=roles/run.invoker >/dev/null
-# The person deploying can open the report page: gcloud run services proxy zombie-sweep-agent
+# IAP fronts the agent: IAP's service agent invokes it; the viewer (browser) and
+# the workflow (a JWT it signs as itself) pass IAP.
+$G beta services identity create --service=iap.googleapis.com >/dev/null
+PROJECT_NUMBER=$($G projects describe "$PROJECT" --format='value(projectNumber)')
 $G run services add-iam-policy-binding "$AGENT" --region="$REGION" \
-  --member="$VIEWER" --role=roles/run.invoker >/dev/null
+  --member="serviceAccount:service-$PROJECT_NUMBER@gcp-sa-iap.iam.gserviceaccount.com" --role=roles/run.invoker >/dev/null
+for m in "$VIEWER" "serviceAccount:$WF_SA"; do
+  $G iap web add-iam-policy-binding --resource-type=cloud-run --service="$AGENT" --region="$REGION" \
+    --member="$m" --role=roles/iap.httpsResourceAccessor --condition=None >/dev/null
+done
+$G iam service-accounts add-iam-policy-binding "$WF_SA" \
+  --member="serviceAccount:$WF_SA" --role=roles/iam.serviceAccountTokenCreator >/dev/null
+
+# Every deploy pushes new images here; keep the newest 3 per image, delete older ones.
+$G artifacts repositories set-cleanup-policies cloud-run-source-deploy --location="$REGION" \
+  --policy="$HERE/deploy/ar-cleanup.json" --no-dry-run >/dev/null
 
 $G workflows deploy "$WF" --location="$REGION" --source="$HERE/deploy/workflow.yaml" \
-  --service-account="$WF_SA" --set-env-vars="AGENT_URL=$AGENT_URL"
+  --service-account="$WF_SA" --set-env-vars="AGENT_URL=$AGENT_URL,WF_SA=$WF_SA"
 
 URI="https://workflowexecutions.googleapis.com/v1/projects/$PROJECT/locations/$REGION/workflows/$WF/executions"
 if $G scheduler jobs describe "$WF-daily" --location="$REGION" >/dev/null 2>&1; then verb=update; else verb=create; fi
