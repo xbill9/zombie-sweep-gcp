@@ -1,0 +1,6 @@
+# Destination URLs for the LinkedIn post and Advocu. PENDING fails the run on purpose.
+devto-gde  = https://dev.to/gde/zombie-sweep-on-google-cloud-a-daily-waste-report-on-alloydb-express-with-a-database-bill-you-can-305g
+medium     = PENDING
+substack   = PENDING
+linkedin-article = PENDING
+repo       = https://github.com/xbill9/zombie-sweep-gcp

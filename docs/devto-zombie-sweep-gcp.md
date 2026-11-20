@@ -310,7 +310,7 @@ From the AlloyDB Express documentation's own comparison:
 | Backups, PITR, HA | ❌ none | 🥇 yes |
 | SLA | ❌ none | 🥇 99.99% for regional HA |
 | PostgreSQL versions | 18 | 🥇 14 to 18 |
-| Terraform | ❌ | 🥇 yes |
+| Terraform | ❌ not supported | 🥇 yes |
 
 ---
 

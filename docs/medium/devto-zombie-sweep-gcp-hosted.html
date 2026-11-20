@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Zombie Sweep on Google Cloud: A Daily Waste Report on AlloyDB Express, With a Database Bill You Can Predict</title>
+  <meta name="description" content="Cloud Scheduler, Workflows and Cloud Run sweep a project every day with zombiescan&#x27;s 20 checks beside Google&#x27;s idle-resource recommenders, store the findings in AlloyDB Express, and an ADK agent writes a briefing from SQL. The database scales to zero, caps its own storage and has a monthly ceiling you can work out in advance." />
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+  </style>
+  <style>
+    body{font-family:-apple-system,'Segoe UI',Roboto,'Liberation Sans',Arial,sans-serif;
+         font-size:18px;line-height:1.58;max-width:42em;color:#242424;}
+    h1,h2,h3,h4{font-weight:700;line-height:1.25;margin-top:1.8em;}
+    h4{font-size:1.25em;}
+    img{max-width:100%;height:auto;display:block;margin:1.6em 0;}
+    pre{background:#f7f7f7;border:1px solid #e6e6e6;border-radius:4px;
+        padding:12px 14px;overflow-x:auto;font-size:14px;line-height:1.45;}
+    code{font-family:'Liberation Mono',Menlo,Consolas,monospace;}
+    :not(pre)>code{background:#f2f2f2;padding:1px 5px;border-radius:3px;font-size:.9em;}
+    blockquote{border-left:3px solid #ddd;margin-left:0;padding-left:1em;color:#555;}
+    hr{border:0;border-top:1px solid #e6e6e6;margin:2.4em 0;}
+  </style>
+</head>
+<body>
+<p>This article provides a step by step guide to building a daily sweep
+for unused Google Cloud resources with Cloud Scheduler, Workflows, Cloud
+Run and AlloyDB Express. Each sweep runs zombiescan's checks beside
+Google's Recommender, stores every finding in PostgreSQL, and an ADK
+agent with MCP Toolbox writes a daily briefing in which every number
+comes from SQL.</p>
+<figure><img src="https://raw.githubusercontent.com/xbill9/zombie-sweep-gcp/main/docs/medium/img/devto-cover.696c5b30.jpg" alt="Zombie Sweep on Google Cloud: A Daily Waste Report on AlloyDB Express, With a Database Bill You Can Predict" /></figure>
+<p>Repository: <a
+href="https://github.com/xbill9/zombie-sweep-gcp">https://github.com/xbill9/zombie-sweep-gcp</a></p>
+<p>A tool that hunts for surprise cloud bills should not create one.
+AlloyDB Express is the database that makes that easy to promise: within
+its free tier the database costs $0.00 a month for this workload, and
+even with every limit maxed out, its bill has a ceiling you can compute
+before you create it.</p>
+<hr />
+<h4 id="why-alloydb-express">Why AlloyDB Express?</h4>
+<p>AlloyDB Express is a preview configuration of AlloyDB for PostgreSQL
+built for prototypes and small workloads. Three properties from its
+documentation decide the bill:</p>
+<ul>
+<li><strong>It scales to zero.</strong> "When an instance is idle, it
+scales down to zero compute so you aren't billed for compute during
+periods of inactivity." The launch post puts the idle threshold at 15
+minutes, and the documentation puts the wake-up at approximately 20
+seconds.</li>
+<li><strong>Storage stops at 20 GB.</strong> "When storage reaches 20
+GB, further write operations aren't allowed." Storage is billed for what
+is used, not for what is provisioned.</li>
+<li><strong>Compute has two sizes.</strong> 1 vCPU (4 GB RAM) or 2 vCPUs
+(8 GB RAM), billed per second as 1 or 2 compute units.</li>
+</ul>
+<p>A database that cannot grow past 2 compute units or 20 GB has a worst
+case. Priced from the Cloud Billing Catalog API for us-west1, with the
+instance never idle and storage full:</p>
+<p><img src="https://raw.githubusercontent.com/xbill9/zombie-sweep-gcp/main/docs/medium/img/devto-zombie-sweep-gcp-table-1.png"
+alt="Table: Instance, Compute, 730 hours, Storage, 20 GB, Most it can bill in a month" /></p>
+<p>That is the ceiling for a database left busy around the clock. A
+daily sweep keeps it awake for minutes a day, and the free tier covers
+that: each month includes 50 compute units and 2 GB of storage per
+billing account for the first 12 months.</p>
+<hr />
+<h4 id="what-is-a-zombie-resource">What Is a Zombie Resource?</h4>
+<p>A zombie resource still bills and no longer does any work. A stopped
+VM whose disks still cost money, a snapshot of a disk that was deleted,
+a static IP attached to nothing, a secret nobody has updated in
+months.</p>
+<p>They collect in projects used for one experiment, in zones you tried
+once, and behind instances that were stopped and forgotten instead of
+deleted.</p>
+<hr />
+<h4 id="doesnt-google-cloud-already-do-this">Doesn't Google Cloud
+Already Do This?</h4>
+<p>Partly. Recommender has idle-resource recommenders for VMs,
+persistent disks, IP addresses, custom images, Cloud SQL instances and
+GKE clusters. This sweep queries 7 of them.</p>
+<p>zombiescan-gcp is an open-source scanner with 20 checks, among them
+orphaned snapshots, stale Artifact Registry repositories, stale secrets,
+Cloud NAT gateways serving nothing, Filestore instances nothing can
+mount, unused firewall rules and subnets, Cloud DNS zones and uptime
+checks for deleted resources. Zombie Sweep runs both sources in every
+sweep and compares them resource by resource, so the report shows which
+source found what.</p>
+<hr />
+<h4 id="at-this-point-you-should-have">At This Point You Should
+Have</h4>
+<ul>
+<li>A Google Cloud project with billing enabled</li>
+<li>The Google Cloud CLI, with the <code>beta</code> component for
+AlloyDB Express</li>
+<li><code>git</code> and <code>python3</code> on the machine that
+deploys</li>
+<li>The Recommender, Cloud Run, Workflows, Cloud Scheduler, AlloyDB,
+Secret Manager, Vertex AI and IAP APIs enabled</li>
+</ul>
+<hr />
+<h4 id="how-it-fits-together">How It Fits Together</h4>
+<pre><code>Cloud Scheduler  zombie-sweep-daily, 06:00 UTC
+      |
+Workflows  zombie-sweep
+      |-- Cloud Run job  MODE=zombiescan   --+
+      |-- Cloud Run job  MODE=recommender  --+--&gt; AlloyDB Express  (runs, findings)
+      |-- POST /briefing  (signed JWT, through IAP)          ^
+      |        Cloud Run service: ADK agent + MCP Toolbox ---+  read-only SQL
+      &#39;-- Cloud Run job  MODE=finish  (stores the briefing, closes the run)</code></pre>
+<p>One Cloud Run job image runs in three modes. One AlloyDB Express
+instance holds two tables and two views. One Cloud Run service holds the
+agent and its SQL tools.</p>
+<hr />
+<h4 id="step-1--create-the-alloydb-express-cluster">Step 1 — Create the
+AlloyDB Express Cluster</h4>
+<p>The Express commands from the documentation, with this project's
+names:</p>
+<pre class="bash"><code>gcloud beta alloydb clusters create zombie-sweep --region=us-west1 \
+    --password=&quot;$DB_PASSWORD&quot; --enable-express
+gcloud beta alloydb instances create zombie-sweep-primary --cluster=zombie-sweep \
+    --region=us-west1 --instance-type=PRIMARY --cpu-count=1 --enable-public-dns
+Creating cluster...
+.......done.
+ 
+real    0m3.463s
+Creating instance...
+.......done.
+ 
+real    0m3.147s</code></pre>
+<p>us-west1 is the only US region Express supports. The instance reports
+<code>PostgreSQL 18.4</code> and <code>max_connections 200</code>, both
+fixed by Express.</p>
+<p>IAM database login needs one database flag:</p>
+<pre class="bash"><code>gcloud alloydb instances update zombie-sweep-primary --cluster=zombie-sweep \
+    --region=us-west1 --database-flags=alloydb.iam_authentication=on</code></pre>
+<hr />
+<h4 id="step-2--two-tables-and-two-views">Step 2 — Two Tables and Two
+Views</h4>
+<p><code>runs</code> holds one row per sweep, keyed by the Workflows
+execution id, with the agent's briefing. <code>findings</code> holds one
+row per resource per source:</p>
+<pre class="sql"><code>CREATE TABLE IF NOT EXISTS findings (
+    run_id         text NOT NULL REFERENCES runs(run_id) ON DELETE CASCADE,
+    source         text NOT NULL CHECK (source IN (&#39;zombiescan&#39;, &#39;recommender&#39;)),
+    project        text NOT NULL,
+    check_id       text NOT NULL,
+    resource       text NOT NULL,
+    monthly_cost   numeric(12, 4) NOT NULL DEFAULT 0,
+    ...
+    PRIMARY KEY (run_id, source, project, check_id, resource)
+);</code></pre>
+<p>The two sources name the same resource differently. zombiescan stores
+<code>w1</code>; Recommender stores
+<code>//compute.googleapis.com/projects/p/regions/us-central1/addresses/w1</code>.
+The view <code>findings_keyed</code> reduces both to (project, kind,
+name), and <code>findings_compared</code> adds
+<code>found_by_both</code>:</p>
+<pre class="sql"><code>CREATE OR REPLACE VIEW findings_compared AS
+SELECT k.*,
+       EXISTS (SELECT 1 FROM findings_keyed o
+               WHERE o.run_id = k.run_id AND o.source &lt;&gt; k.source
+                 AND o.project = k.project AND o.kind = k.kind AND o.name = k.name) AS found_by_both
+FROM findings_keyed k;</code></pre>
+<p><code>python3 sql/apply.py</code> applies the schema and views from a
+workstation through the AlloyDB Python connector.</p>
+<hr />
+<h4 id="step-3--one-cloud-run-job-three-modes">Step 3 — One Cloud Run
+Job, Three Modes</h4>
+<p><code>sweep/job.py</code> runs one source against one project and
+prints one JSON line:</p>
+<ul>
+<li><code>MODE=zombiescan</code> runs zombiescan-gcp's 20 checks and
+prices each finding from the public price list</li>
+<li><code>MODE=recommender</code> reads the 7 idle-resource recommenders
+at every zone, region or global location each one uses</li>
+<li><code>MODE=finish</code> stores the briefing and marks the run
+<code>DONE</code></li>
+</ul>
+<p>Each source mode deletes and re-inserts its own rows for the run, so
+a retried job leaves no duplicates. In Cloud Run the job logs in to
+AlloyDB with IAM database authentication as its service account: no
+password in the job, and a <code>zombie_writer</code> role that can
+write findings and close runs.</p>
+<hr />
+<h4
+id="step-4--workflows-runs-both-sources-then-asks-for-a-briefing">Step 4
+— Workflows Runs Both Sources, Then Asks for a Briefing</h4>
+<p>The two sources run as parallel branches, each one a Cloud Run job
+execution through the Workflows connector:</p>
+<pre class="yaml"><code>- sources:
+    parallel:
+      for:
+        value: mode
+        in: [&quot;zombiescan&quot;, &quot;recommender&quot;]
+        steps:
+          - run_source:
+              call: googleapis.run.v2.projects.locations.jobs.run</code></pre>
+<p>Then the workflow posts the run id to the agent's
+<code>/briefing</code> route and runs the job a third time with
+<code>MODE=finish</code> to store what came back. A failed briefing does
+not fail the sweep; the run closes without one.</p>
+<hr />
+<h4 id="mag_right-tip-behind-iap-workflows-signs-its-own-jwt">🔎 Tip:
+Behind IAP, Workflows Signs Its Own JWT</h4>
+<p>The agent's Cloud Run service sits behind Identity-Aware Proxy, so a
+person opens the report page with a Google sign-in. IAP with the
+Google-managed OAuth client accepts a JWT signed by a service account
+with <code>aud</code> set to the URL, so the workflow signs one as
+itself and sends it as a bearer token:</p>
+<pre class="yaml"><code>- claims:
+    assign:
+      - now: ${int(sys.now())}
+      - claims:
+          iss: ${sys.get_env(&quot;WF_SA&quot;)}
+          sub: ${sys.get_env(&quot;WF_SA&quot;)}
+          aud: ${sys.get_env(&quot;AGENT_URL&quot;) + &quot;/*&quot;}
+          iat: ${now}
+          exp: ${now + 900}
+- sign:
+    call: http.post
+    args:
+      url: ${&quot;https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/&quot; + sys.get_env(&quot;WF_SA&quot;) + &quot;:signJwt&quot;}
+      auth: {type: OAuth2}
+      body:
+        payload: ${json.encode_to_string(claims)}
+    result: jwt</code></pre>
+<p>The workflow's service account holds Service Account Token Creator on
+itself only, and <code>roles/iap.httpsResourceAccessor</code> on the
+agent. Workflows expressions take no map literals, so the claims are
+built in an <code>assign</code> step first.</p>
+<hr />
+<h4 id="step-5--the-agent-adk-with-mcp-toolbox-as-a-sidecar">Step 5 —
+The Agent: ADK With MCP Toolbox as a Sidecar</h4>
+<p>The agent is a FastAPI app running an ADK <code>LlmAgent</code> on
+Gemini through Vertex AI. Its only access to the data is MCP Toolbox for
+Databases, running as a second container in the same Cloud Run service
+on <code>127.0.0.1:5000</code>. Toolbox connects to AlloyDB with IAM
+login as the agent's service account, which holds a read-only role.</p>
+<p>Toolbox exposes 8 SQL tools: <code>list_runs</code>,
+<code>totals</code>, <code>top_waste</code>,
+<code>count_findings</code>, <code>only_one_source</code>,
+<code>diff_vs_previous</code>, <code>finding_history</code> and
+<code>run_briefing</code>. The tool definitions live in Secret Manager
+and are mounted into the Toolbox container as a file.</p>
+<p>The agent serves four routes: <code>GET /</code> for the report page,
+<code>POST /ask</code> for questions, <code>POST /briefing</code> for
+the workflow, and <code>GET /health</code>, because Cloud Run reserves
+<code>/healthz</code>.</p>
+<hr />
+<h4 id="step-6--every-number-comes-from-sql">Step 6 — Every Number Comes
+From SQL</h4>
+<p>The agent is told never to add, count, average or compare numbers
+itself. Every count and sum is a SQL tool, and
+<code>count_findings</code> takes filters and returns the exact
+answer:</p>
+<pre class="yaml"><code>name: count_findings
+type: postgres-sql
+source: findings-db
+annotations: {readOnlyHint: true}
+description: |
+  Exact count, total, minimum and maximum monthly cost of the findings in one
+  run that match every filter given. Any filter left out matches everything.
+  Use this for any &quot;how many&quot; or &quot;how much&quot; question; never count rows yourself.
+  min_monthly_cost is inclusive (&gt;=).
+statement: |
+  ...
+  SELECT (SELECT id FROM r) AS run_id, count(*) AS findings,
+         round(coalesce(sum(monthly_cost), 0), 2)::float8 AS total_monthly_cost,
+         round(min(monthly_cost), 2)::float8 AS min_monthly_cost,
+         round(max(monthly_cost), 2)::float8 AS max_monthly_cost
+  FROM findings_compared
+  WHERE run_id = (SELECT id FROM r)
+    AND ($5::float8 IS NULL OR monthly_cost &gt;= $5::float8)
+    ...</code></pre>
+<p>The briefing is then checked figure by figure against SQL run
+directly on the database, with no model involved:
+<code>.claude/skills/check-briefing/check.py</code> prints the briefing
+beside the counts, sums and per-check totals PostgreSQL computes for the
+same run.</p>
+<hr />
+<h4
+id="mag_right-tip-a-read-only-toolbox-source-needs-readonlyhint-on-every-tool">🔎
+Tip: A Read-Only Toolbox Source Needs readOnlyHint on Every Tool</h4>
+<p>The Toolbox source is declared <code>readOnly: true</code>. With that
+set, Toolbox keeps a <code>postgres-sql</code> tool only when the tool
+declares <code>annotations: {readOnlyHint: true}</code>. All 8 tools
+here carry it. A new tool without it does not appear in the agent's tool
+list.</p>
+<hr />
+<h4 id="step-7--deploy-with-one-script">Step 7 — Deploy With One
+Script</h4>
+<pre class="bash"><code>python3 sql/apply.py              # schema and views
+deploy/deploy.sh                  # service accounts, IAM, job, agent, IAP, workflow, schedule
+python3 sql/apply.py grants.sql   # database roles for the IAM users deploy.sh created
+deploy/deploy.sh run              # one sweep now
+SUCCEEDED   {&quot;run_id&quot;:&quot;854715f3-1beb-4f35-8f4e-30f9f02f14d3&quot;}</code></pre>
+<p><code>deploy.sh</code> is idempotent and safe to run again. It also
+keeps only the newest version of the Toolbox secret enabled and sets an
+Artifact Registry cleanup policy that keeps the newest 3 images, so
+repeated deploys do not leave a growing pile of billable versions
+behind.</p>
+<p>The schedule is <code>0 6 * * *</code> in UTC. Across 11 successful
+sweeps, each took 54 to 127 seconds end to end.</p>
+<hr />
+<h4 id="what-the-sweep-found">What the Sweep Found</h4>
+<p>Run <code>854715f3</code>, 2026-11-20, one project:</p>
+<p><img src="https://raw.githubusercontent.com/xbill9/zombie-sweep-gcp/main/docs/medium/img/devto-zombie-sweep-gcp-table-2.png"
+alt="Table: Source, Findings, Monthly" /></p>
+<p>One resource was found by both: a static IP address, <code>w1</code>,
+at $7.30 a month. Everything else came from zombiescan alone:</p>
+<p><img src="https://raw.githubusercontent.com/xbill9/zombie-sweep-gcp/main/docs/medium/img/devto-zombie-sweep-gcp-table-3.png"
+alt="Table: Check, Findings, Monthly" /></p>
+<p>The agent's briefing for that run, as stored in
+<code>runs.briefing</code>:</p>
+<pre><code>Totals by source: zombiescan has 27 findings costing 128.86 dollars a month; recommender has 1 findings costing 7.3 dollars a month.
+Top waste: snapshot-w5-opt (53.19), windows (23.94), debian13b (13.06), w1 (10.88), and w2 (10.88).
+Diff vs previous run fe2aac43-c1a1-49d4-8645-1afbd80ff204: 28 findings costing 136.16 are unchanged.</code></pre>
+<p>Every figure in it matches the SQL computed for the same run.</p>
+<hr />
+<h4 id="compare-and-contrast">Compare and Contrast</h4>
+<p>From the AlloyDB Express documentation's own comparison:</p>
+<p><img src="https://raw.githubusercontent.com/xbill9/zombie-sweep-gcp/main/docs/medium/img/devto-zombie-sweep-gcp-table-4.png"
+alt="Table: AlloyDB Express, AlloyDB" /></p>
+<hr />
+<h4 id="what-does-it-cost">What Does It Cost?</h4>
+<p><code>docs/cost.py</code> prices the sweep from the Cloud Billing
+Catalog API and measures usage from the project: 37 Cloud Run job
+executions averaging 24.4 seconds, 7 briefings averaging 31.6 seconds,
+and the database at 17880855 bytes. For 30 daily sweeps:</p>
+<p><img src="https://raw.githubusercontent.com/xbill9/zombie-sweep-gcp/main/docs/medium/img/devto-zombie-sweep-gcp-table-5.png"
+alt="Table: Item, List price, With the Express free tier" /></p>
+<p>AlloyDB compute hours are each sweep's duration plus the 15-minute
+idle period before the instance pauses. The 50 free compute units leave
+41.44 a month after the sweeps: room for about 166 more wake-ups from
+people opening the report page or asking the agent a question.</p>
+<p>The database line stays at $0.00 for as long as the free tier lasts,
+and after that it has the ceiling worked out above: $89.95 a month for
+this 1 vCPU instance if it never sleeps at all.</p>
+<hr />
+<h4 id="so-which-one">So, Which One?</h4>
+<p>For a scheduled job that writes a few megabytes a day and is read now
+and then, use AlloyDB Express. It sleeps between sweeps, its storage
+cannot grow past 20 GB, and its largest possible bill is a number you
+can compute before you create it.</p>
+<p>Move to full AlloyDB when the data needs backups, high availability
+or an SLA. The upgrade is in place and keeps the connection string;
+there is no way back to Express afterwards.</p>
+<hr />
+<h4 id="summary">Summary</h4>
+<p>The goal of this article was to run a daily sweep for unused Google
+Cloud resources without adding a database bill to watch. The key to the
+solution was AlloyDB Express, which scales to zero between sweeps, caps
+its own storage, and fits this workload inside its free tier, with every
+number in the report computed by SQL. The results on one project
+were:</p>
+<ul>
+<li>🟢 Two sources per sweep: zombiescan's 20 checks and 7 Recommender
+idle recommenders</li>
+<li>🟢 28 findings, $136.16 a month, one resource found by both
+sources</li>
+<li>🟢 Every figure in the agent's briefing matches SQL run on the same
+data</li>
+<li>🟢 $0.09 a month within the Express free tier, $1.08 at list
+price</li>
+<li>🟢 A worst-case database bill of $89.95 a month, computed in
+advance</li>
+<li>⚠️ AlloyDB Express is a preview, with no backups, no high
+availability and no SLA</li>
+<li>❌ Gemini tokens for the briefing are not priced here</li>
+</ul>
+<p>Scope: one Google Cloud project in us-west1, swept daily from
+2026-11-15 to 2026-11-20, one 1 vCPU AlloyDB Express instance. Costs are
+estimates from Cloud Billing Catalog list prices and measured run times.
+AlloyDB active hours assume the 15-minute idle period from the launch
+post. They exclude Gemini, Secret Manager, Workflows, Cloud Scheduler,
+Artifact Registry, Cloud Build and logging. The sweep is read-only and
+deletes nothing.</p>
+<p>The strategy for using AlloyDB Express as the store for a daily waste
+sweep was validated with an incremental step by step approach.</p>
+<hr />
+<h4 id="references">References</h4>
+<ul>
+<li><a href="https://github.com/xbill9/zombie-sweep-gcp">Code on
+GitHub</a></li>
+<li><a
+href="https://github.com/xbill9/zombiescan-gcp">zombiescan-gcp</a></li>
+<li><a
+href="https://docs.cloud.google.com/alloydb/docs/express-overview">AlloyDB
+Express overview</a></li>
+<li><a
+href="https://cloud.google.com/blog/products/databases/introducing-alloydb-express-for-rapid-testing-and-prototyping">Introducing
+AlloyDB Express</a></li>
+<li><a
+href="https://docs.cloud.google.com/recommender/docs/recommenders">Recommender:
+list of recommenders</a></li>
+<li><a href="https://github.com/googleapis/mcp-toolbox">MCP Toolbox for
+Databases</a></li>
+<li><a
+href="https://docs.cloud.google.com/run/docs/securing/identity-aware-proxy-cloud-run">IAP
+for Cloud Run</a></li>
+<li><a
+href="https://dev.to/aws-builders/zombie-sweep-a-daily-serverless-hunt-for-unused-aws-resources-1ph1">Zombie
+Sweep on AWS</a></li>
+</ul>
+</body>
+</html>
