@@ -1,0 +1,32 @@
+AlloyDB Express idle test, 2026-11-23. Metric alloydb.googleapis.com/instance/postgres/instances, polled every 5 min.
+Control: cluster zs-idle-control created 17:25:19Z with defaults (no database flags), no client ever connected.
+Production: zombie-sweep-primary (alloydb.iam_authentication=on), no sweep in the window.
+
+17:25 zs-idle-control-primary points 0 statuses [] last None
+17:25 zombie-sweep-primary points 0 statuses [] last None
+17:30 zs-idle-control-primary points 2 statuses [('up', '1')] last ('17:27', 'up', '1')
+17:30 zombie-sweep-primary points 3 statuses [('up', '1')] last ('17:27', 'up', '1')
+17:35 zs-idle-control-primary points 8 statuses [('up', '1')] last ('17:33', 'up', '1')
+17:35 zombie-sweep-primary points 9 statuses [('up', '1')] last ('17:33', 'up', '1')
+17:40 zs-idle-control-primary points 13 statuses [('up', '1')] last ('17:38', 'up', '1')
+17:40 zombie-sweep-primary points 14 statuses [('up', '1')] last ('17:38', 'up', '1')
+17:45 zs-idle-control-primary points 18 statuses [('up', '1')] last ('17:43', 'up', '1')
+17:45 zombie-sweep-primary points 19 statuses [('up', '1')] last ('17:43', 'up', '1')
+17:50 zs-idle-control-primary points 23 statuses [('up', '1')] last ('17:48', 'up', '1')
+17:50 zombie-sweep-primary points 24 statuses [('up', '1')] last ('17:48', 'up', '1')
+17:55 zs-idle-control-primary points 28 statuses [('up', '1')] last ('17:53', 'up', '1')
+17:55 zombie-sweep-primary points 29 statuses [('up', '1')] last ('17:53', 'up', '1')
+18:00 zs-idle-control-primary points 33 statuses [('up', '1')] last ('17:58', 'up', '1')
+18:00 zombie-sweep-primary points 34 statuses [('up', '1')] last ('17:58', 'up', '1')
+18:05 zs-idle-control-primary points 38 statuses [('up', '1')] last ('18:03', 'up', '1')
+18:05 zombie-sweep-primary points 39 statuses [('up', '1')] last ('18:03', 'up', '1')
+18:10 zs-idle-control-primary points 43 statuses [('up', '1')] last ('18:08', 'up', '1')
+18:10 zombie-sweep-primary points 44 statuses [('up', '1')] last ('18:08', 'up', '1')
+18:15 zs-idle-control-primary points 48 statuses [('up', '1')] last ('18:13', 'up', '1')
+18:15 zombie-sweep-primary points 49 statuses [('up', '1')] last ('18:13', 'up', '1')
+
+[exited with code 0]
+
+Production since creation: 11364 minutes 2026-11-15T19:39Z..2026-11-23T17:02Z, all status=up, no gap over 2 min.
+Production pg_postmaster_start_time 2026-11-14 08:17:46+00 (cluster created 2026-11-15 19:38:52Z); alloydbagent health sessions open since 2026-11-15 19:40:50+00.
+Cloud Billing Reports, AlloyDB service, Nov 1-23 2026: $0.00; no AlloyDB Express compute or storage SKU listed.
