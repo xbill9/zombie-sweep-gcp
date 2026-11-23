@@ -1,0 +1,17 @@
+My #AlloyDBSprint entry is published.
+
+Zombie Sweep runs every morning on Cloud Run and keeps its findings in AlloyDB Express. A Gemini agent writes the briefing, and every number in it comes from SQL.
+
+The database pauses after about 15 minutes idle, so a month of daily sweeps uses 7.95-8.56 compute-unit hours, inside the 50 free ones. The whole thing comes to $1.08 a month at list price, $0.09 with the free tier. The most a 1 vCPU Express instance can bill in a month is $89.95, so there is no surprise database bill.
+
+Dev.to is here: https://dev.to/gde/zombie-sweep-on-google-cloud-a-daily-waste-report-on-alloydb-express-with-a-database-bill-you-can-305g
+
+Medium is here: https://medium.com/@xbill999/zombie-sweep-on-google-cloud-a-daily-waste-report-on-alloydb-express-with-a-database-bill-you-can-ecd3112006d8
+
+Substack is here: https://xbill9.substack.com/p/zombie-sweep-on-google-cloud-a-daily
+
+My LinkedIn post is here: https://www.linkedin.com/feed/update/urn:li:activity:7529637053253279744/
+
+The demo video is here: https://youtu.be/4w_AB3Eev-c
+
+The repo is here: https://github.com/xbill9/zombie-sweep-gcp
