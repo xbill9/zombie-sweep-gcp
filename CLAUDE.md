@@ -28,3 +28,4 @@ GCP project is `comglitn`, region `us-west1` (defaults in `deploy/deploy.sh`, `s
 - zombiescan-gcp is pinned to commit `9c74922` in both `sweep/requirements.txt` and the role URL in `deploy/deploy.sh`; bump both together.
 - Re-running a job is safe: it deletes and re-inserts its own source's rows for that run.
 - AlloyDB Express: no backups/HA, no Terraform; changing DB flags takes minutes.
+- Express pauses after ~15 min idle. `postgres/instances` reports "up" every minute even while paused; only `cpu/average_utilization` stops (and it misses some active periods). Postmaster start time survives a pause. Test a pause by timing a cold first query (3.6s vs 0.2s warm).
