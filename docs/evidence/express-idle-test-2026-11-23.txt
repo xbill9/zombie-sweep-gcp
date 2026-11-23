@@ -1,3 +1,4 @@
+[Superseded: see CORRECTION at the end. It does pause.]
 AlloyDB Express idle test, 2026-11-23. Metric alloydb.googleapis.com/instance/postgres/instances, polled every 5 min.
 Control: cluster zs-idle-control created 17:25:19Z with defaults (no database flags), no client ever connected.
 Production: zombie-sweep-primary (alloydb.iam_authentication=on), no sweep in the window.
@@ -30,3 +31,24 @@ Production: zombie-sweep-primary (alloydb.iam_authentication=on), no sweep in th
 Production since creation: 11364 minutes 2026-11-15T19:39Z..2026-11-23T17:02Z, all status=up, no gap over 2 min.
 Production pg_postmaster_start_time 2026-11-14 08:17:46+00 (cluster created 2026-11-15 19:38:52Z); alloydbagent health sessions open since 2026-11-15 19:40:50+00.
 Cloud Billing Reports, AlloyDB service, Nov 1-23 2026: $0.00; no AlloyDB Express compute or storage SKU listed.
+
+CORRECTION, 19:31Z. The conclusion "did not scale to zero" was wrong. postgres/instances, cpu/vcpus and
+memory/min_available_memory report every minute regardless of state; they describe the configured node.
+cpu/average_utilization ("across all currently serving nodes") reports only in short windows:
+
+zombie-sweep-primary, 2026-11-14..2026-11-23, cpu/average_utilization windows (gap > 3 min splits):
+  2026-11-15 19:42-19:56 15 min | 2026-11-15 20:23 1 min | 2026-11-16 01:14 1 min | 2026-11-17 08:29-08:44 16 min
+  2026-11-18 06:20-06:35 16 min | 2026-11-19 20:12-20:26 15 min | 2026-11-20 20:33-20:47 15 min
+  2026-11-22 04:35-04:50 16 min | 2026-11-22 22:45-23:04 20 min
+  9 windows, 115 serving minutes of 11508.
+zs-idle-control-primary: one window 2026-11-23 17:29-17:43, 15 min, then no CPU samples to deletion (121 min).
+  Matches the blog: "automatically pauses after 15 minutes of inactivity".
+Caveat: the 06:00Z sweeps on 11-16, 11-19, 11-20, 11-21, 11-22, 11-23 left no CPU samples, so the CPU metric
+is incomplete as a record of every active period.
+
+Cold-connect test (scratchpad wake.py, local connector as postgres), instance idle since before 17:25Z:
+  cold 19:30:41Z connect=2.7s first query=3.6s  newest alloydbadmin backend_start 19:30:11
+  warm 19:30:45Z connect=2.8s first query=0.2s
+The AlloyDB-internal sessions were all opened at 19:30:11-12, i.e. on wake; pg_postmaster_start_time stays
+2026-11-14 08:17:46, so a pause keeps the Postgres process (it is not a restart).
+Billing $0.00 for Nov 1-23 is consistent with ~115 active CU-minutes, inside the 50 CU free tier.
